@@ -4,24 +4,6 @@ import io.netty.buffer.ByteBuf
 import io.netty.buffer.ByteBufUtil
 
 
-const val HEADER_SIZE = 24
-const val KEY_LENGTH_OFFSET = 2
-const val EXTRAS_LENGTH_OFFSET = 4
-const val DATA_TYPE_OFFSET = 5
-const val VBUCKET_OFFSET = 6
-const val BODY_LENGTH_OFFSET = 8
-const val OPAQUE_OFFSET = 12
-const val CAS_OFFSET = 16
-
-const val MAGIC_REQ = 0x80
-const val MAGIC_RES = 0x81
-
-const val MAGIC_REQ_FLEX = 0x08
-const val MAGIC_RES_FLEX = 0x18
-
-// Duplex mode, server-initiated request and client response
-const val MAGIC_SERVER_REQ = 0x82
-const val MAGIC_SERVER_RES = 0x83
 
 /**
  * Dumps the given ByteBuf in the "wire format".
@@ -32,6 +14,7 @@ const val MAGIC_SERVER_RES = 0x83
  *
  * @return the String ready to be printed/logged.
  */
+/*
 fun ByteBuf.humanize(): String {
     val sb = StringBuilder()
     sb.append(
@@ -87,11 +70,14 @@ private fun formatOpcode(opcode: Int): String {
 
 fun getOpcodeName(opcode: Int): String = "?"
 
+*/
+
 /**
  * Returns the message content in its original form (possibly compressed).
  *
  * The returned buffer shares its reference count with the given buffer.
  */
+/*
 val ByteBuf.rawContent: ByteBuf
     get() = slice(HEADER_SIZE + keyLength + extrasLength, contentLength)
 
@@ -137,4 +123,4 @@ val ByteBuf.statusCode: Int
 val ByteBuf.isAnyRequest: Boolean
     get() = magic == MAGIC_REQ || magic == MAGIC_REQ_FLEX
 
-
+*/

@@ -27,6 +27,9 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
 
+    implementation("io.github.microutils:kotlin-logging-jvm:2.0.4")
+    implementation("org.apache.logging.log4j:log4j-slf4j-impl:2.11.2")
+
     implementation("com.google.guava:guava:29.0-jre")
     implementation("io.netty:netty-all:4.1.58.Final")
 
