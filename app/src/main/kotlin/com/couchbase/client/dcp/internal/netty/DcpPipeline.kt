@@ -1,13 +1,15 @@
 package com.couchbase.client.dcp.internal.netty
 
+import awaitSuspend
 import com.couchbase.client.dcp.internal.BODY_LENGTH_OFFSET
 import com.couchbase.client.dcp.internal.DcpRequest
 import com.couchbase.client.dcp.internal.HostAndPort
-import com.couchbase.client.dcp.internal.Opcode
 import io.netty.bootstrap.Bootstrap
-import io.netty.buffer.ByteBufAllocator
 import io.netty.buffer.UnpooledByteBufAllocator
-import io.netty.channel.*
+import io.netty.channel.Channel
+import io.netty.channel.ChannelInitializer
+import io.netty.channel.ChannelOption
+import io.netty.channel.EventLoopGroup
 import io.netty.channel.epoll.EpollEventLoopGroup
 import io.netty.channel.epoll.EpollSocketChannel
 import io.netty.channel.kqueue.KQueueEventLoopGroup
@@ -20,13 +22,20 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder
 import io.netty.handler.logging.LogLevel
 import io.netty.handler.logging.LoggingHandler
 import io.netty.util.AttributeKey
-import java.lang.IllegalArgumentException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
+import mu.KotlinLogging
+import java.nio.charset.StandardCharsets.UTF_8
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 
+private val logger = KotlinLogging.logger {}
+
 class DcpPipeline : ChannelInitializer<Channel>() {
     override fun initChannel(ch: Channel) {
-        ch.pipeline().apply{
+        ch.pipeline().apply {
             addLast(LengthFieldBasedFrameDecoder(Int.MAX_VALUE, BODY_LENGTH_OFFSET, 4, 12, 0, false))
             addLast(LoggingHandler(javaClass, LogLevel.INFO))
             addLast(RequestDispatcherHandler())
@@ -67,25 +76,66 @@ class DcpPipeline : ChannelInitializer<Channel>() {
 private val HOST_AND_PORT = AttributeKey.valueOf<HostAndPort>("hostAndPort")
 
 
-fun main() {
+fun main(): Unit = runBlocking {
     val globalEventLoopGroup = NioEventLoopGroup()
 
+
     val eventLoopGroup = globalEventLoopGroup;
+    try {
+
+        val address = HostAndPort("127.0.0.1", 11210)
+        val socketConnectTimeout = Duration.ofSeconds(10)
+        val bootstrap = Bootstrap()
+            .handler(DcpPipeline())
+            .option(ChannelOption.ALLOCATOR, UnpooledByteBufAllocator.DEFAULT)
+            .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, socketConnectTimeout.toMillis().toInt())
+            .remoteAddress(address.host, address.port)
+            .attr(HOST_AND_PORT, address) // stash it away separately for safety (paranoia?)
+            .group(eventLoopGroup)
+            .channel(channelForEventLoopGroup(eventLoopGroup))
+
+//
+//    val f: CompletableFuture<Any>? = null
+//    f.await()
+
+            val ch = bootstrap.connect().awaitSuspend()
+            logger.info { "connected! $ch" }
+
+        withContext(Dispatchers.Unconfined) {
+            val dispatcher = ch.pipeline().get(RequestDispatcherHandler::class.java)
+            val versionResponse = dispatcher.sendRequest(DcpRequest.version()).awaitSuspend()
+
+            versionResponse.use {
+                logger.info("server version: ${it.packet().rawValue.toString(UTF_8)}")
+            }
+
+            val r2 = dispatcher.sendRequest(DcpRequest.version()).awaitSuspend()
+            r2.use {
+                logger.info("Again server version: ${it.packet().rawValue.toString(UTF_8)}")
+            }
+        }
 
 
-    val address = HostAndPort("localhost", 11210)
-    val socketConnectTimeout = Duration.ofSeconds(10)
-    val bootstrap = Bootstrap()
-        .handler(DcpPipeline())
-        .option(ChannelOption.ALLOCATOR, UnpooledByteBufAllocator.DEFAULT)
-        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, socketConnectTimeout.toMillis().toInt())
-        .remoteAddress(address.host, address.port)
-        .attr(HOST_AND_PORT, address) // stash it away separately for safety (paranoia?)
-        .group(eventLoopGroup)
-        .channel(channelForEventLoopGroup(eventLoopGroup))
 
-    val connectFuture = bootstrap.connect()
+        //ch.pipeline().writeAndFlush(DcpRequest.version().toByteBuf(123))
 
+
+//
+//    suspendCancellableCoroutine<Channel> { cont ->
+//        val future = bootstrap.connect()
+//        cont.cancelFutureOnCancellation(future)
+//        future.addListener {
+//            val channel = future.channel()
+//            if (future.isSuccess) {
+//                cont.resume(channel) { channel.close() }
+//            } else {
+//                cont.resumeWithException(future.cause())
+//            }
+//        }
+//    }
+
+
+        /*
     connectFuture.addListener(ChannelFutureListener {
         if (!it.isSuccess) {
             it.cause().printStackTrace();
@@ -106,9 +156,14 @@ fun main() {
         }
     })
 
-    TimeUnit.SECONDS.sleep(3)
-    eventLoopGroup.shutdownGracefully()
-    println("done")
+
+    */
+    } finally {
+        println("shutting down")
+        eventLoopGroup.shutdownGracefully()
+        eventLoopGroup.awaitTermination(10, TimeUnit.SECONDS)
+        println("done")
+    }
 }
 
 fun channelForEventLoopGroup(group: EventLoopGroup): Class<out Channel> {

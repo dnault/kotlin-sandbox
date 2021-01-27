@@ -80,7 +80,9 @@ inline class DcpPacket(val buffer: ByteBuf) {
         Key Length     (2,3)    ${keyLength.toHex(2)}
         Extras Length  (4)      ${extrasLength.toHex(1)}
         Data Type      (5)      ${dataType.toHex(1)}
-        ${if (isAnyRequest) "VBucket" else "Status "}        (6,7)    ${buffer.getUnsignedShort(VBUCKET_OFFSET).toHex(2)}
+        ${if (isAnyRequest) "VBucket" else "Status "}        (6,7)    ${
+                buffer.getUnsignedShort(VBUCKET_OFFSET).toHex(2)
+            }
         Total Body     (8-11)   ${totalBodyLength.toHex(4)}
         Opaque         (12-15)  ${opaque.toHex(4)}
         CAS            (16-23)  ${cas.toHex(8)}
@@ -103,8 +105,6 @@ private fun formatOptionalBuffer(name: String, buffer: ByteBuf): String {
     }
 }
 
-private fun Number.toHex(bytes: Int): String = "0x%0${bytes * 2}x".format(this)
-
 private fun formatMagic(magic: Int): String {
     val name: String = when (magic) {
         MAGIC_REQ -> "REQUEST"
@@ -119,7 +119,7 @@ private fun formatMagic(magic: Int): String {
 }
 
 private fun formatOpcode(opcode: Int): String {
-    return "${opcode.toHex(1)} (${getOpcodeName(opcode)})"
+    return "${opcode.toHex(1)} (${Opcode.getName(opcode)})"
 }
 
-private fun getOpcodeName(opcode: Int): String = "?"
+private fun Number.toHex(bytes: Int): String = "0x%0${bytes * 2}x".format(this)

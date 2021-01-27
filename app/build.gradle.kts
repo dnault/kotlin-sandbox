@@ -26,6 +26,10 @@ dependencies {
     // Use the Kotlin JDK 8 standard library.
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.4.2")
+
+    implementation("com.couchbase.client:core-io:2.6.0")
 
     implementation("io.github.microutils:kotlin-logging-jvm:2.0.4")
     implementation("org.apache.logging.log4j:log4j-slf4j-impl:2.11.2")
