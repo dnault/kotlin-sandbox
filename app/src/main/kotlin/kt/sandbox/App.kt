@@ -3,9 +3,15 @@
  */
 package kt.sandbox
 
+import com.couchbase.client.core.env.CoreEnvironment
+import com.couchbase.client.core.env.PasswordAuthenticator
+import com.couchbase.client.core.env.SeedNode
+import com.couchbase.client.kotlin.Cluster
+import com.couchbase.client.kotlin.ClusterOptions
 import io.netty.buffer.ByteBuf
 import io.netty.buffer.ByteBufUtil
 import io.netty.buffer.Unpooled
+import java.nio.charset.StandardCharsets.UTF_8
 
 class App {
     val greeting: String
@@ -14,38 +20,18 @@ class App {
         }
 }
 
-fun Int.isOdd() = this % 2 != 0
-
-fun buildBuffer(opcode: Int,
-                extras: (ByteBuf) -> Unit = { },
-                content: (ByteBuf) -> Unit = { }): ByteBuf {
-    val buf = Unpooled.buffer()
-    buf.writeInt(opcode)
-    extras.invoke(buf)
-    content.invoke(buf)
-    return buf
-}
-
 
 fun main() {
-    val m = Money(1, "JPY")
-    m.amount++
+    val auth = PasswordAuthenticator.create("Administrator", "password")
 
-    println(m.copy(currency = "USD"))
+    val cluster = Cluster(CoreEnvironment.create(), auth, setOf(SeedNode.create("localhost")))
 
-    val a = 2;
-    val b = 3;
-    println(a and b)
+//    val cluster = Cluster.connect("localhost", "Administrator", "password")
+    val collection = cluster.bucket("default").defaultCollection()
 
-    println(2.isOdd())
-    println(3.isOdd())
+   // cluster.query("SELECT * from default")
 
-    val buf = buildBuffer(
-            opcode = 42,
-            extras = { it.writeByte(7) },
-            content = { it.writeBytes("hello".toByteArray())}
+    Cluster.connect("localhost", ClusterOptions(auth))
+    println(collection.get("foo").content.toString(UTF_8))
 
-    )
-
-    println(ByteBufUtil.prettyHexDump(buf))
 }

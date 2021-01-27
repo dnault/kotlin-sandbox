@@ -29,7 +29,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.4.2")
 
-    implementation("com.couchbase.client:core-io:2.6.0")
+    implementation("com.couchbase.client:core-io:2.1.1")
 
     implementation("io.github.microutils:kotlin-logging-jvm:2.0.4")
     implementation("org.apache.logging.log4j:log4j-slf4j-impl:2.11.2")
