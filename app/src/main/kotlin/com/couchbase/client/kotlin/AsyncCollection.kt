@@ -23,21 +23,27 @@ import com.couchbase.client.core.msg.kv.GetRequest
 import com.couchbase.client.kotlin.kv.GetOptions
 import com.couchbase.client.kotlin.kv.GetResult
 import kotlinx.coroutines.future.await
-import java.time.Duration
 import java.util.*
 
-class AsyncCollection(name: String, scopeName: String, bucketName: String, private val core: Core) {
-
+class AsyncCollection(
+    name: String,
+    scopeName: String,
+    bucketName: String,
+    private val core: Core
+) {
     private val collectionIdentifier = CollectionIdentifier(bucketName, Optional.of(scopeName), Optional.of(name))
-    private val defaultGetOptions = GetOptions()
 
-    suspend fun get(id: String, options: GetOptions = defaultGetOptions): GetResult {
-        val timeout = if (options.timeoutMillis == null) {
-            core.context().environment().timeoutConfig().kvTimeout()
-        } else {
-            Duration.ofMillis(options.timeoutMillis)
-        }
-        val request = GetRequest(id, timeout, core.context(), collectionIdentifier, core.context().environment().retryStrategy(), null)
+    private fun CommonOptions.actualKvTimeout() = timeout ?: core.context().environment().timeoutConfig().kvTimeout()
+    private fun CommonOptions.actualRetryStrategy() = retryStrategy ?: core.context().environment().retryStrategy()
+
+    suspend fun get(id: String, options: GetOptions = GetOptions.DEFAULT): GetResult {
+        val request = GetRequest(id,
+            options.actualKvTimeout(),
+            core.context(),
+            collectionIdentifier,
+            options.actualRetryStrategy(),
+            options.parentSpan
+        )
         core.send(request)
         val response = request.response().await()
 
@@ -47,5 +53,4 @@ class AsyncCollection(name: String, scopeName: String, bucketName: String, priva
             throw DefaultErrorUtil.keyValueStatusToException(request, response)
         }
     }
-
 }

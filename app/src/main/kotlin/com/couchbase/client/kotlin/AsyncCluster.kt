@@ -21,17 +21,17 @@ import com.couchbase.client.core.env.Authenticator
 import com.couchbase.client.core.env.CoreEnvironment
 import com.couchbase.client.core.env.PasswordAuthenticator
 import com.couchbase.client.core.env.SeedNode
-import com.couchbase.client.core.msg.kv.GetRequest
 import com.couchbase.client.core.msg.query.QueryRequest
 import com.couchbase.client.core.util.ConnectionStringUtil
-import com.couchbase.client.kotlin.kv.GetOptions
-import com.couchbase.client.kotlin.kv.GetResult
 import com.couchbase.client.kotlin.query.QueryOptions
 import com.couchbase.client.kotlin.query.QueryResult
 import kotlinx.coroutines.future.await
-import java.time.Duration
 
-class AsyncCluster internal constructor(environment: CoreEnvironment, authenticator: Authenticator, seedNodes: Set<SeedNode>) {
+class AsyncCluster internal constructor(
+    environment: CoreEnvironment,
+    authenticator: Authenticator,
+    seedNodes: Set<SeedNode>,
+) {
 
     private val core: Core = Core.create(environment, authenticator, seedNodes)
 
@@ -47,13 +47,13 @@ class AsyncCluster internal constructor(environment: CoreEnvironment, authentica
             return connect(connectionString, ClusterOptions(PasswordAuthenticator.create(username, password)))
         }
 
-        fun connect(connectionString: String, options: ClusterOptions): AsyncCluster  {
+        fun connect(connectionString: String, options: ClusterOptions): AsyncCluster {
             val env = CoreEnvironment.create()
             val seedNodes = ConnectionStringUtil.seedNodesFromConnectionString(
-                    connectionString,
-                    env.ioConfig().dnsSrvEnabled(),
-                    env.securityConfig().tlsEnabled(),
-                    env.eventBus()
+                connectionString,
+                env.ioConfig().dnsSrvEnabled(),
+                env.securityConfig().tlsEnabled(),
+                env.eventBus()
             )
             return AsyncCluster(env, options.authenticator, seedNodes)
         }
@@ -65,18 +65,16 @@ class AsyncCluster internal constructor(environment: CoreEnvironment, authentica
     }
 
     suspend fun query(statement: String, options: QueryOptions = defaultQueryOptions): QueryResult {
-        val timeout = if (options.timeoutMillis == null) {
-            core.context().environment().timeoutConfig().kvTimeout()
-        } else {
-            Duration.ofMillis(options.timeoutMillis)
-        }
+        val timeout = options.timeout ?: core.context().environment().timeoutConfig().queryTimeout()
         val query = null;
         val idempotent = options.readonly;
         val contextId = null;
         val span = null;
 
-        val request = QueryRequest(timeout, core.context(), core.context().environment().retryStrategy(),
-                null, statement, query, idempotent, contextId, span, null)
+        val request = QueryRequest(
+            timeout, core.context(), core.context().environment().retryStrategy(),
+            null, statement, query, idempotent, contextId, span, null
+        )
         core.send(request)
         val response = request.response().await()
 

@@ -3,15 +3,12 @@
  */
 package kt.sandbox
 
-import com.couchbase.client.core.env.CoreEnvironment
-import com.couchbase.client.core.env.PasswordAuthenticator
-import com.couchbase.client.core.env.SeedNode
-import com.couchbase.client.kotlin.Cluster
-import com.couchbase.client.kotlin.ClusterOptions
-import io.netty.buffer.ByteBuf
-import io.netty.buffer.ByteBufUtil
-import io.netty.buffer.Unpooled
+import com.couchbase.client.kotlin.AsyncCluster
+import com.couchbase.client.kotlin.kv.GetOptions
+import kotlinx.coroutines.async
+import kotlinx.coroutines.runBlocking
 import java.nio.charset.StandardCharsets.UTF_8
+import java.time.Duration
 
 class App {
     val greeting: String
@@ -20,18 +17,55 @@ class App {
         }
 }
 
+data class Foo(var x: String)
 
-fun main() {
-    val auth = PasswordAuthenticator.create("Administrator", "password")
+fun main() = runBlocking {
 
-    val cluster = Cluster(CoreEnvironment.create(), auth, setOf(SeedNode.create("localhost")))
+    val cluster = AsyncCluster.connect("localhost", "Administrator", "password")
 
-//    val cluster = Cluster.connect("localhost", "Administrator", "password")
+
+    // cluster.query("SELECT * from default")
+
+    //   val cluster = Cluster.connect("localhost", "Administrator", "password")
+//    println(
+//        collection.get(
+//            "foo", GetOptions(
+//                timeout = null
+//            )
+//        ).content.toString(UTF_8)
+//    )
     val collection = cluster.bucket("default").defaultCollection()
 
-   // cluster.query("SELECT * from default")
+    println("loading foo 3 times")
+    collection.get("foo")
+    collection.get("foo")
+    collection.get("foo")
+    println("done loading foo 3 times")
 
-    Cluster.connect("localhost", ClusterOptions(auth))
-    println(collection.get("foo").content.toString(UTF_8))
+
+    println(
+        collection.get(
+            "foo", GetOptions(
+                timeout = Duration.ofMillis(1)
+            )
+        )
+            .content.toString(UTF_8)
+    )
+
+    runBlocking {
+        println("helloooooo async " + async { collection.get("foo") }.await().content.toString(UTF_8))
+    }
+
+//
+//    collection.get("foo") { timeout = Duration.ofMillis(0) }
+//
+//    println(
+//        collection.get("foo").content.toString(UTF_8)
+//    )
+
+    println(CommonOptions({
+        clientContext = mapOf("1" to 3)
+    }).copy { timeout = Duration.ofSeconds(3) })
+
 
 }
