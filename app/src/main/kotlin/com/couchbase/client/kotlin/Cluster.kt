@@ -23,7 +23,6 @@ import com.couchbase.client.core.env.PasswordAuthenticator
 import com.couchbase.client.core.env.SeedNode
 import com.couchbase.client.core.msg.query.QueryRequest
 import com.couchbase.client.core.util.ConnectionStringUtil
-import com.couchbase.client.kotlin.query.QueryOptions
 import com.couchbase.client.kotlin.query.QueryResult
 import kotlinx.coroutines.future.await
 
@@ -34,8 +33,6 @@ class Cluster internal constructor(
 ) {
 
     private val core: Core = Core.create(environment, authenticator, seedNodes)
-
-    private val defaultQueryOptions = QueryOptions()
 
     init {
         core.initGlobalConfig()
@@ -59,21 +56,35 @@ class Cluster internal constructor(
         }
     }
 
+    private fun RequestOptions.actualQueryTimeout() = timeout ?: core.context().environment().timeoutConfig().queryTimeout()
+    private fun RequestOptions.actualRetryStrategy() = retryStrategy ?: core.context().environment().retryStrategy()
+
     fun bucket(name: String): Bucket {
         core.openBucket(name)
         return Bucket(name, core)
     }
 
-    suspend fun query(statement: String, options: QueryOptions = defaultQueryOptions): QueryResult {
-        val timeout = options.timeout ?: core.context().environment().timeoutConfig().queryTimeout()
+    suspend fun query(
+        statement: String,
+        readonly: Boolean = false,
+        options: RequestOptions = RequestOptions.DEFAULT
+    ): QueryResult {
+        TODO("what about these?")
         val query = null;
-        val idempotent = options.readonly;
         val contextId = null;
-        val span = null;
+        val queryContext = null;
 
         val request = QueryRequest(
-            timeout, core.context(), core.context().environment().retryStrategy(),
-            null, statement, query, idempotent, contextId, span, null
+            options.actualQueryTimeout(),
+            core.context(),
+            options.actualRetryStrategy(),
+            null,
+            statement,
+            query,
+            readonly,
+            contextId,
+            options.parentSpan,
+            queryContext
         )
         core.send(request)
         val response = request.response().await()

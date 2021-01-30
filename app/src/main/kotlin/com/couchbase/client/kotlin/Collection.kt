@@ -20,7 +20,6 @@ import com.couchbase.client.core.Core
 import com.couchbase.client.core.error.DefaultErrorUtil
 import com.couchbase.client.core.io.CollectionIdentifier
 import com.couchbase.client.core.msg.kv.GetRequest
-import com.couchbase.client.kotlin.kv.GetOptions
 import com.couchbase.client.kotlin.kv.GetResult
 import kotlinx.coroutines.future.await
 import java.util.*
@@ -33,11 +32,17 @@ class Collection(
 ) {
     private val collectionIdentifier = CollectionIdentifier(bucketName, Optional.of(scopeName), Optional.of(name))
 
-    private fun CommonOptions.actualKvTimeout() = timeout ?: core.context().environment().timeoutConfig().kvTimeout()
-    private fun CommonOptions.actualRetryStrategy() = retryStrategy ?: core.context().environment().retryStrategy()
+    private fun RequestOptions.actualKvTimeout() = timeout ?: core.context().environment().timeoutConfig().kvTimeout()
+    private fun RequestOptions.actualRetryStrategy() = retryStrategy ?: core.context().environment().retryStrategy()
 
-    suspend fun get(id: String, options: GetOptions = GetOptions.DEFAULT): GetResult {
-        val request = GetRequest(id,
+    suspend fun get(
+        id: String,
+        withExpiry: Boolean = false,
+        projections: List<String>? = null,
+        options: RequestOptions = RequestOptions.DEFAULT,
+    ): GetResult {
+        val request = GetRequest(
+            id,
             options.actualKvTimeout(),
             core.context(),
             collectionIdentifier,
