@@ -4,7 +4,7 @@
 package kt.sandbox
 
 import com.couchbase.client.kotlin.Cluster
-import com.couchbase.client.kotlin.kv.GetOptions
+import com.couchbase.client.kotlin.RequestOptions
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import java.nio.charset.StandardCharsets.UTF_8
@@ -45,11 +45,9 @@ fun main() = runBlocking {
 
     println(
         collection.get(
-            "foo", GetOptions(
-                timeout = Duration.ofMillis(1)
-            )
-        )
-            .content.toString(UTF_8)
+            "foo",
+            options = RequestOptions(timeout = Duration.ofMillis(1))
+        ).content.toString(UTF_8)
     )
 
     runBlocking {
