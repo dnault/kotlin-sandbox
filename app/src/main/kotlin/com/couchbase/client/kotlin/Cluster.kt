@@ -17,14 +17,19 @@
 package com.couchbase.client.kotlin
 
 import com.couchbase.client.core.Core
+import com.couchbase.client.core.diagnostics.ClusterState
+import com.couchbase.client.core.diagnostics.WaitUntilReadyHelper
 import com.couchbase.client.core.env.Authenticator
 import com.couchbase.client.core.env.CoreEnvironment
 import com.couchbase.client.core.env.PasswordAuthenticator
 import com.couchbase.client.core.env.SeedNode
 import com.couchbase.client.core.msg.query.QueryRequest
+import com.couchbase.client.core.service.ServiceType
 import com.couchbase.client.core.util.ConnectionStringUtil
 import com.couchbase.client.kotlin.query.QueryResult
 import kotlinx.coroutines.future.await
+import java.time.Duration
+import java.util.*
 
 public class Cluster internal constructor(
     environment: CoreEnvironment,
@@ -56,8 +61,19 @@ public class Cluster internal constructor(
         }
     }
 
-    private fun RequestOptions.actualQueryTimeout() = timeout ?: core.context().environment().timeoutConfig().queryTimeout()
+    private fun RequestOptions.actualQueryTimeout() =
+        timeout ?: core.context().environment().timeoutConfig().queryTimeout()
+
     private fun RequestOptions.actualRetryStrategy() = retryStrategy ?: core.context().environment().retryStrategy()
+
+    public suspend fun waitUntilReady(
+        timeout: Duration,
+        serviceTypes: Set<ServiceType> = emptySet(),
+        desiredState: ClusterState = ClusterState.ONLINE
+    ): Cluster {
+        WaitUntilReadyHelper.waitUntilReady(core, serviceTypes, timeout, desiredState, Optional.empty()).await()
+        return this
+    }
 
     public fun bucket(name: String): Bucket {
         core.openBucket(name)

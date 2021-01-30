@@ -26,7 +26,8 @@ import java.time.Duration
 
 public class Bucket internal constructor(
     public val name: String,
-    internal val core: Core) {
+    internal val core: Core,
+) {
 
     public fun defaultCollection(): Collection {
         return Collection(CollectionIdentifier.DEFAULT_COLLECTION, CollectionIdentifier.DEFAULT_SCOPE, name, core)
@@ -35,16 +36,9 @@ public class Bucket internal constructor(
     public suspend fun waitUntilReady(
         timeout: Duration,
         serviceTypes: Set<ServiceType> = emptySet(),
-        desiredState: ClusterState = ClusterState.ONLINE
+        desiredState: ClusterState = ClusterState.ONLINE,
     ): Bucket {
-        WaitUntilReadyHelper.waitUntilReady(
-            core,
-            serviceTypes,
-            timeout,
-            desiredState,
-            name.toOptional()
-        ).await()
-
+        WaitUntilReadyHelper.waitUntilReady(core, serviceTypes, timeout, desiredState, name.toOptional()).await()
         return this
     }
 }

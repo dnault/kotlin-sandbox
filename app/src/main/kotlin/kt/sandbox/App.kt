@@ -27,8 +27,10 @@ public fun main() {
 }
 
 internal fun foo() = runBlocking {
-    val cluster = Cluster.connect("localhost", "AdministXrator", "password")
+    val cluster = Cluster.connect("localhost", "Administrator", "password")
+        .waitUntilReady(Duration.ofSeconds(10))
 
+    println("cluster ready!")
     // cluster.query("SELECT * from default")
 
     //   val cluster = Cluster.connect("localhost", "Administrator", "password")
@@ -40,7 +42,7 @@ internal fun foo() = runBlocking {
 //        ).content.toString(UTF_8)
 //    )
     val collection = cluster.bucket("default")
-        .waitUntilReady(Duration.ofSeconds(10), setOf())
+        .waitUntilReady(Duration.ofSeconds(10), setOf()).also { println("bucket ready!") }
         .defaultCollection()
 
 
