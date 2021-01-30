@@ -17,6 +17,8 @@
 package com.couchbase.client.kotlin
 
 import com.couchbase.client.core.Core
+import com.couchbase.client.core.cnc.TracingIdentifiers
+import com.couchbase.client.core.env.CoreEnvironment
 import com.couchbase.client.core.error.DefaultErrorUtil
 import com.couchbase.client.core.io.CollectionIdentifier
 import com.couchbase.client.core.msg.kv.GetRequest
@@ -24,38 +26,52 @@ import com.couchbase.client.kotlin.kv.GetResult
 import kotlinx.coroutines.future.await
 import java.util.*
 
-class Collection(
+public class Collection(
     name: String,
     scopeName: String,
     bucketName: String,
-    private val core: Core
+    private val core: Core,
 ) {
+    private val env: CoreEnvironment
+        get() = core.context().environment()
+
     private val collectionIdentifier = CollectionIdentifier(bucketName, Optional.of(scopeName), Optional.of(name))
 
-    private fun RequestOptions.actualKvTimeout() = timeout ?: core.context().environment().timeoutConfig().kvTimeout()
-    private fun RequestOptions.actualRetryStrategy() = retryStrategy ?: core.context().environment().retryStrategy()
+    private fun RequestOptions.actualKvTimeout() = timeout ?: env.timeoutConfig().kvTimeout()
+    private fun RequestOptions.actualRetryStrategy() = retryStrategy ?: env.retryStrategy()
+    private fun RequestOptions.actualSpan(name: String) = env.requestTracer().requestSpan(name, parentSpan)
 
-    suspend fun get(
+    public suspend fun get(
         id: String,
         withExpiry: Boolean = false,
-        projections: List<String>? = null,
+        projections: List<String> = emptyList(),
         options: RequestOptions = RequestOptions.DEFAULT,
     ): GetResult {
+
+        if (withExpiry || projections.isNotEmpty()) TODO("implement subdoc")
+
         val request = GetRequest(
             id,
             options.actualKvTimeout(),
             core.context(),
             collectionIdentifier,
             options.actualRetryStrategy(),
-            options.parentSpan
+            options.actualSpan(TracingIdentifiers.SPAN_REQUEST_KV_GET),
         )
-        core.send(request)
-        val response = request.response().await()
+        request.context().clientContext(options.clientContext)
 
-        if (response.status().success()) {
-            return GetResult(response.cas(), response.flags(), Optional.empty(), response.content())
-        } else {
+        core.send(request)
+        try {
+            val response = request.response().await()
+            if (response.status().success()) {
+                return GetResult(response.cas(), response.flags(), Optional.empty(), response.content())
+            }
             throw DefaultErrorUtil.keyValueStatusToException(request, response)
+
+        } finally {
+            request.context().logicallyComplete()
         }
     }
+
 }
+

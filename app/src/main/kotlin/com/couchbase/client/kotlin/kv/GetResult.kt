@@ -2,7 +2,7 @@ package com.couchbase.client.kotlin.kv
 
 import java.util.*
 
-data class GetResult(val cas: Long, val flags: Int, val expiry: Optional<Long>, val content: ByteArray) {
+public data class GetResult(val cas: Long, val flags: Int, val expiry: Optional<Long>, val content: ByteArray) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false

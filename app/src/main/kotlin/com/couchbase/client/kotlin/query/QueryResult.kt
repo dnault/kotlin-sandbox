@@ -1,4 +1,4 @@
 package com.couchbase.client.kotlin.query
 
-class QueryResult {
+public class QueryResult {
 }

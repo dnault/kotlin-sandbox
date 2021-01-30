@@ -18,7 +18,7 @@ import java.util.*
 
 private val logger = KotlinLogging.logger {}
 
-class RequestDispatcherHandler : ChannelInboundHandlerAdapter() {
+internal class RequestDispatcherHandler : ChannelInboundHandlerAdapter() {
 
     // TODO add some contextual information about the request
     // so failures can be matched with the requests

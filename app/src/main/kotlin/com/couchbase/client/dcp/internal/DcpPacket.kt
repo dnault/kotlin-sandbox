@@ -3,26 +3,26 @@ package com.couchbase.client.dcp.internal
 import io.netty.buffer.ByteBuf
 import io.netty.buffer.ByteBufUtil
 
-const val HEADER_SIZE = 24
-const val KEY_LENGTH_OFFSET = 2
-const val EXTRAS_LENGTH_OFFSET = 4
-const val DATA_TYPE_OFFSET = 5
-const val VBUCKET_OFFSET = 6
-const val BODY_LENGTH_OFFSET = 8
-const val OPAQUE_OFFSET = 12
-const val CAS_OFFSET = 16
+internal const val HEADER_SIZE = 24
+internal const val KEY_LENGTH_OFFSET = 2
+internal const val EXTRAS_LENGTH_OFFSET = 4
+internal const val DATA_TYPE_OFFSET = 5
+internal const val VBUCKET_OFFSET = 6
+internal const val BODY_LENGTH_OFFSET = 8
+internal const val OPAQUE_OFFSET = 12
+internal const val CAS_OFFSET = 16
 
-const val MAGIC_REQ = 0x80
-const val MAGIC_RES = 0x81
+internal const val MAGIC_REQ = 0x80
+internal const val MAGIC_RES = 0x81
 
-const val MAGIC_REQ_FLEX = 0x08
-const val MAGIC_RES_FLEX = 0x18
+internal const val MAGIC_REQ_FLEX = 0x08
+internal const val MAGIC_RES_FLEX = 0x18
 
 // Duplex mode, server-initiated request and client response
-const val MAGIC_SERVER_REQ = 0x82
-const val MAGIC_SERVER_RES = 0x83
+internal const val MAGIC_SERVER_REQ = 0x82
+internal const val MAGIC_SERVER_RES = 0x83
 
-inline class DcpPacket(val buffer: ByteBuf) {
+internal inline class DcpPacket(val buffer: ByteBuf) {
     val extras: ByteBuf
         get() = buffer.slice(HEADER_SIZE, extrasLength)
 

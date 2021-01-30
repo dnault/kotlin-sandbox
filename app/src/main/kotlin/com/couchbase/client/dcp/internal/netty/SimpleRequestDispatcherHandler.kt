@@ -11,7 +11,7 @@ import java.util.*
 private val logger = KotlinLogging.logger {}
 
 
-class SimpleRequestDispatcherHandler : ChannelDuplexHandler() {
+internal class SimpleRequestDispatcherHandler : ChannelDuplexHandler() {
     // TODO add some contextual information about the request
     // so failures can be matched with the requests
     data class OutstandingRequest(val opaque: Int, val promise: Promise<DcpResponse>)

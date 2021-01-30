@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit
 
 private val logger = KotlinLogging.logger {}
 
-class DcpPipeline : ChannelInitializer<Channel>() {
+internal class DcpPipeline : ChannelInitializer<Channel>() {
     override fun initChannel(ch: Channel) {
         ch.pipeline().apply {
             addLast(LengthFieldBasedFrameDecoder(Int.MAX_VALUE, BODY_LENGTH_OFFSET, 4, 12, 0, false))
@@ -76,7 +76,7 @@ class DcpPipeline : ChannelInitializer<Channel>() {
 private val HOST_AND_PORT = AttributeKey.valueOf<HostAndPort>("hostAndPort")
 
 
-fun main(): Unit = runBlocking {
+public fun main(): Unit = runBlocking {
     val globalEventLoopGroup = NioEventLoopGroup()
 
 
@@ -166,7 +166,7 @@ fun main(): Unit = runBlocking {
     }
 }
 
-fun channelForEventLoopGroup(group: EventLoopGroup): Class<out Channel> {
+public fun channelForEventLoopGroup(group: EventLoopGroup): Class<out Channel> {
     if (group is EpollEventLoopGroup) {
         return EpollSocketChannel::class.java
     } else if (group is OioEventLoopGroup) {

@@ -4,7 +4,7 @@ import com.couchbase.client.core.cnc.RequestSpan
 import com.couchbase.client.core.retry.RetryStrategy
 import java.time.Duration
 
-class CommonOptions private constructor(
+internal class CommonOptions private constructor(
     val timeout: Duration?,
     val retryStrategy: RetryStrategy?,
     val clientContext: Map<String, Any>?,
@@ -40,6 +40,6 @@ class CommonOptions private constructor(
 }
 
 
-fun CommonOptions(initializer: CommonOptions.Builder.() -> Unit): CommonOptions {
+internal fun CommonOptions(initializer: CommonOptions.Builder.() -> Unit): CommonOptions {
     return CommonOptions.Builder().apply(initializer).build()
 }

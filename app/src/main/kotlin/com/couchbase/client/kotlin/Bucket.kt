@@ -17,12 +17,36 @@
 package com.couchbase.client.kotlin
 
 import com.couchbase.client.core.Core
+import com.couchbase.client.core.diagnostics.ClusterState
+import com.couchbase.client.core.diagnostics.WaitUntilReadyHelper
 import com.couchbase.client.core.io.CollectionIdentifier
+import com.couchbase.client.core.service.ServiceType
+import kotlinx.coroutines.future.await
+import java.time.Duration
 
-class Bucket internal constructor(val name: String, val core: Core) {
+public class Bucket internal constructor(
+    public val name: String,
+    internal val core: Core) {
 
-    fun defaultCollection(): Collection {
+    public fun defaultCollection(): Collection {
         return Collection(CollectionIdentifier.DEFAULT_COLLECTION, CollectionIdentifier.DEFAULT_SCOPE, name, core)
     }
 
+    public suspend fun waitUntilReady(
+        timeout: Duration,
+        serviceTypes: Set<ServiceType> = emptySet(),
+        desiredState: ClusterState = ClusterState.ONLINE
+    ): Bucket {
+        WaitUntilReadyHelper.waitUntilReady(
+            core,
+            serviceTypes,
+            timeout,
+            desiredState,
+            name.toOptional()
+        ).await()
+
+        return this
+    }
 }
+
+internal fun <T> T?.toOptional() = java.util.Optional.ofNullable(this)

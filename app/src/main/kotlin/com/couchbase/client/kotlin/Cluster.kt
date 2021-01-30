@@ -26,7 +26,7 @@ import com.couchbase.client.core.util.ConnectionStringUtil
 import com.couchbase.client.kotlin.query.QueryResult
 import kotlinx.coroutines.future.await
 
-class Cluster internal constructor(
+public class Cluster internal constructor(
     environment: CoreEnvironment,
     authenticator: Authenticator,
     seedNodes: Set<SeedNode>,
@@ -38,13 +38,13 @@ class Cluster internal constructor(
         core.initGlobalConfig()
     }
 
-    companion object {
+    public companion object {
 
-        fun connect(connectionString: String, username: String, password: String): Cluster {
+        public fun connect(connectionString: String, username: String, password: String): Cluster {
             return connect(connectionString, ClusterOptions(PasswordAuthenticator.create(username, password)))
         }
 
-        fun connect(connectionString: String, options: ClusterOptions): Cluster {
+        public fun connect(connectionString: String, options: ClusterOptions): Cluster {
             val env = CoreEnvironment.create()
             val seedNodes = ConnectionStringUtil.seedNodesFromConnectionString(
                 connectionString,
@@ -59,12 +59,12 @@ class Cluster internal constructor(
     private fun RequestOptions.actualQueryTimeout() = timeout ?: core.context().environment().timeoutConfig().queryTimeout()
     private fun RequestOptions.actualRetryStrategy() = retryStrategy ?: core.context().environment().retryStrategy()
 
-    fun bucket(name: String): Bucket {
+    public fun bucket(name: String): Bucket {
         core.openBucket(name)
         return Bucket(name, core)
     }
 
-    suspend fun query(
+    public suspend fun query(
         statement: String,
         readonly: Boolean = false,
         options: RequestOptions = RequestOptions.DEFAULT

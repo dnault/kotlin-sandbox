@@ -8,7 +8,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-suspend fun ChannelFuture.awaitSuspend(): Channel {
+internal suspend fun ChannelFuture.awaitSuspend(): Channel {
     return suspendCancellableCoroutine { cont: CancellableContinuation<Channel> ->
         cont.invokeOnCancellation { cancel(true) }
         addListener(ChannelFutureListener {
@@ -20,7 +20,7 @@ suspend fun ChannelFuture.awaitSuspend(): Channel {
     }
 }
 
-suspend fun <T> Future<T>.awaitSuspend(): T {
+internal suspend fun <T> Future<T>.awaitSuspend(): T {
     return suspendCancellableCoroutine { cont: CancellableContinuation<T> ->
         cont.invokeOnCancellation { cancel(true) }
         addListener(FutureListener<T> {

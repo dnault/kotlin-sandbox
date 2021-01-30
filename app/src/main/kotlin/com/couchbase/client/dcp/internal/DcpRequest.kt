@@ -12,7 +12,7 @@ import kotlin.reflect.full.memberProperties
 
 private val logger = KotlinLogging.logger {}
 
-class DcpRequest(
+public class DcpRequest(
     private val opcode: Int,
     private val partition: Int = 0,
     private val extras: (ByteBuf) -> Unit = { },
@@ -20,11 +20,11 @@ class DcpRequest(
 ) {
     override fun toString(): String = "${javaClass.name}(opcode=${opcode},partition=${partition})"
 
-    companion object {
-        fun version() : DcpRequest = DcpRequest(opcode = Opcode.VERSION)
+    public companion object {
+        public fun version() : DcpRequest = DcpRequest(opcode = Opcode.VERSION)
     }
 
-    fun toByteBuf(opaque: Int, allocator: ByteBufAllocator = UnpooledByteBufAllocator.DEFAULT): ByteBuf {
+    public fun toByteBuf(opaque: Int, allocator: ByteBufAllocator = UnpooledByteBufAllocator.DEFAULT): ByteBuf {
         val buf = allocator.buffer()
 
         try {
@@ -59,7 +59,7 @@ class DcpRequest(
 
 private fun ByteBuf.writeString(value: String): ByteBuf = writeBytes(value.toByteArray(UTF_8))
 
-fun main() {
+public fun main() {
     val request = DcpRequest(
         opcode = Opcode.DCP_NOOP,
         partition = 42,

@@ -18,7 +18,7 @@ package com.couchbase.client.dcp.internal
 import java.net.InetSocketAddress
 import java.util.*
 
-class HostAndPort(host: String, val port: Int) {
+internal class HostAndPort(host: String, val port: Int) {
     private val ipv6Literal: Boolean = host.contains(":")
     val host: String = if (ipv6Literal) canonicalizeIpv6Literal(host) else host
 
