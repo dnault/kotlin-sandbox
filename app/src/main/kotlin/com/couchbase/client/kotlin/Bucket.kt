@@ -19,10 +19,10 @@ package com.couchbase.client.kotlin
 import com.couchbase.client.core.Core
 import com.couchbase.client.core.io.CollectionIdentifier
 
-class AsyncBucket internal constructor(val name: String, val core: Core) {
+class Bucket internal constructor(val name: String, val core: Core) {
 
-    fun defaultCollection(): AsyncCollection {
-        return AsyncCollection(CollectionIdentifier.DEFAULT_COLLECTION, CollectionIdentifier.DEFAULT_SCOPE, name, core)
+    fun defaultCollection(): Collection {
+        return Collection(CollectionIdentifier.DEFAULT_COLLECTION, CollectionIdentifier.DEFAULT_SCOPE, name, core)
     }
 
 }

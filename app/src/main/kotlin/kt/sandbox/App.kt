@@ -3,7 +3,7 @@
  */
 package kt.sandbox
 
-import com.couchbase.client.kotlin.AsyncCluster
+import com.couchbase.client.kotlin.Cluster
 import com.couchbase.client.kotlin.kv.GetOptions
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
@@ -21,7 +21,7 @@ data class Foo(var x: String)
 
 fun main() = runBlocking {
 
-    val cluster = AsyncCluster.connect("localhost", "Administrator", "password")
+    val cluster = Cluster.connect("localhost", "Administrator", "password")
 
 
     // cluster.query("SELECT * from default")

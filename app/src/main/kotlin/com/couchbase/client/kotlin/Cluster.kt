@@ -27,7 +27,7 @@ import com.couchbase.client.kotlin.query.QueryOptions
 import com.couchbase.client.kotlin.query.QueryResult
 import kotlinx.coroutines.future.await
 
-class AsyncCluster internal constructor(
+class Cluster internal constructor(
     environment: CoreEnvironment,
     authenticator: Authenticator,
     seedNodes: Set<SeedNode>,
@@ -43,11 +43,11 @@ class AsyncCluster internal constructor(
 
     companion object {
 
-        fun connect(connectionString: String, username: String, password: String): AsyncCluster {
+        fun connect(connectionString: String, username: String, password: String): Cluster {
             return connect(connectionString, ClusterOptions(PasswordAuthenticator.create(username, password)))
         }
 
-        fun connect(connectionString: String, options: ClusterOptions): AsyncCluster {
+        fun connect(connectionString: String, options: ClusterOptions): Cluster {
             val env = CoreEnvironment.create()
             val seedNodes = ConnectionStringUtil.seedNodesFromConnectionString(
                 connectionString,
@@ -55,13 +55,13 @@ class AsyncCluster internal constructor(
                 env.securityConfig().tlsEnabled(),
                 env.eventBus()
             )
-            return AsyncCluster(env, options.authenticator, seedNodes)
+            return Cluster(env, options.authenticator, seedNodes)
         }
     }
 
-    fun bucket(name: String): AsyncBucket {
+    fun bucket(name: String): Bucket {
         core.openBucket(name)
-        return AsyncBucket(name, core)
+        return Bucket(name, core)
     }
 
     suspend fun query(statement: String, options: QueryOptions = defaultQueryOptions): QueryResult {

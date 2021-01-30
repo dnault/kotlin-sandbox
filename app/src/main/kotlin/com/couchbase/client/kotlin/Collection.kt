@@ -25,7 +25,7 @@ import com.couchbase.client.kotlin.kv.GetResult
 import kotlinx.coroutines.future.await
 import java.util.*
 
-class AsyncCollection(
+class Collection(
     name: String,
     scopeName: String,
     bucketName: String,
