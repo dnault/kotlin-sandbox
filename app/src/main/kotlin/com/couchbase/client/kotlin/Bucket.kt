@@ -26,7 +26,7 @@ import java.time.Duration
 
 public class Bucket internal constructor(
     public val name: String,
-    internal val core: Core,
+    private val core: Core,
 ) {
 
     public fun defaultCollection(): Collection {

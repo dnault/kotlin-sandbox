@@ -3,12 +3,10 @@
  */
 package kt.sandbox
 
-import com.couchbase.client.core.service.ServiceType
 import com.couchbase.client.kotlin.Cluster
 import com.couchbase.client.kotlin.RequestOptions
 import kotlinx.coroutines.DEBUG_PROPERTY_NAME
 import kotlinx.coroutines.DEBUG_PROPERTY_VALUE_ON
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time.Duration
@@ -46,8 +44,9 @@ internal fun foo() = runBlocking {
         .defaultCollection()
 
 
+    // delay(1000)
 
-   // delay(1000)
+    println(collection)
 
     println("loading foo 3 times")
     collection.get("foo")
