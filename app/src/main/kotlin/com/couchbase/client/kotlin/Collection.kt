@@ -19,17 +19,23 @@ package com.couchbase.client.kotlin
 import com.couchbase.client.core.Core
 import com.couchbase.client.core.cnc.TracingIdentifiers
 import com.couchbase.client.core.env.CoreEnvironment
+import com.couchbase.client.core.error.CouchbaseException
 import com.couchbase.client.core.error.DefaultErrorUtil
+import com.couchbase.client.core.error.InvalidArgumentException
+import com.couchbase.client.core.error.context.ReducedKeyValueErrorContext
 import com.couchbase.client.core.io.CollectionIdentifier
 import com.couchbase.client.core.msg.Request
 import com.couchbase.client.core.msg.Response
-import com.couchbase.client.core.msg.kv.GetRequest
-import com.couchbase.client.core.msg.kv.KeyValueRequest
+import com.couchbase.client.core.msg.kv.*
+import com.couchbase.client.core.projections.ProjectionsApplier
+import com.couchbase.client.kotlin.internal.LookupInMacro
 import com.couchbase.client.kotlin.kv.GetResult
 import kotlinx.coroutines.future.await
+import java.nio.charset.StandardCharsets.UTF_8
+import java.time.Instant
 import java.util.*
 
-public class Collection(
+public class Collection internal constructor(
     public val name: String,
     public val scopeName: String,
     public val bucketName: String,
@@ -51,20 +57,139 @@ public class Collection(
         options: RequestOptions = RequestOptions.DEFAULT,
     ): GetResult {
 
-        if (withExpiry || projections.isNotEmpty()) TODO("implement subdoc")
+        if (!withExpiry && projections.isEmpty()) {
+            val request = GetRequest(
+                id,
+                options.actualKvTimeout(),
+                core.context(),
+                collectionIdentifier,
+                options.actualRetryStrategy(),
+                options.actualSpan(TracingIdentifiers.SPAN_REQUEST_KV_GET),
+            )
 
-        val request = GetRequest(
-            id,
+            exec(request, options).apply {
+                return GetResult.withUnknownExpiry(id, cas(), flags(), content())
+            }
+        }
+
+        // subdoc
+        val request = createSubdocGetRequest(id, withExpiry, projections, options)
+        exec(request, options).apply {
+            return parseSubdocGet(id, this)
+        }
+    }
+
+    private fun createSubdocGetRequest(
+        id: String,
+        withExpiry: Boolean = false,
+        projections: List<String>,
+        options: RequestOptions,
+    ): SubdocGetRequest {
+        validateProjections(id, projections, withExpiry)
+        val commands = ArrayList<SubdocGetRequest.Command>(16)
+
+        if (projections.isEmpty()) {
+            // fetch whole document
+            commands.add(SubdocGetRequest.Command(SubdocCommandType.GET_DOC, "", false, commands.size))
+        } else for (projection in projections) {
+            commands.add(SubdocGetRequest.Command(SubdocCommandType.GET, projection, false, commands.size))
+        }
+
+        if (withExpiry) {
+            // xattrs must go first
+            commands.add(0, SubdocGetRequest.Command(
+                SubdocCommandType.GET,
+                LookupInMacro.EXPIRY_TIME,
+                true,
+                commands.size
+            ))
+
+            // If we have projections, there is no need to fetch the flags
+            // since only JSON is supported that implies the flags.
+            // This will also "force" the transcoder on the read side to be
+            // JSON aware since the flags are going to be hard-set to the
+            // JSON compat flags.
+            if (projections.isEmpty()) {
+                commands.add(1, SubdocGetRequest.Command(
+                    SubdocCommandType.GET,
+                    LookupInMacro.FLAGS,
+                    true,
+                    commands.size
+                ))
+            }
+        }
+
+        return SubdocGetRequest(
             options.actualKvTimeout(),
             core.context(),
             collectionIdentifier,
             options.actualRetryStrategy(),
-            options.actualSpan(TracingIdentifiers.SPAN_REQUEST_KV_GET),
+            id,
+            0x00,
+            commands,
+            options.actualSpan(TracingIdentifiers.SPAN_REQUEST_KV_LOOKUP_IN)
         )
+    }
 
-        exec(request, options).apply {
-            return GetResult(cas(), flags(), Optional.empty(), content())
+    private fun validateProjections(id: String, projections: List<String>, withExpiry: Boolean) {
+        try {
+            if (projections.any { it.isEmpty() }) {
+                throw InvalidArgumentException.fromMessage("Empty string is not a valid projection.")
+            }
+
+            if (withExpiry) {
+                if (projections.size > 15) {
+                    throw InvalidArgumentException.fromMessage("Only a maximum of 16 fields can be " +
+                            "projected per request due to a server limitation (includes the expiration macro as one field).")
+                }
+            } else {
+                if (projections.size > 16) {
+                    throw InvalidArgumentException.fromMessage("Only a maximum of 16 fields can be " +
+                            "projected per request due to a server limitation.")
+                }
+            }
+
+        } catch (t: Throwable) {
+            throw InvalidArgumentException("Argument validation failed",
+                t,
+                ReducedKeyValueErrorContext.create(id, collectionIdentifier))
         }
+    }
+
+    private fun parseSubdocGet(id: String, response: SubdocGetResponse): GetResult {
+        val cas = response.cas()
+        var exptime: ByteArray? = null
+        var content: ByteArray? = null
+        var flags: ByteArray? = null
+        for (value in response.values()) {
+            if (value != null) {
+                if (LookupInMacro.EXPIRY_TIME.equals(value.path())) {
+                    exptime = value.value()
+                } else if (LookupInMacro.FLAGS.equals(value.path())) {
+                    flags = value.value()
+                } else if (value.path().isEmpty()) {
+                    content = value.value()
+                }
+            }
+        }
+        val convertedFlags =
+            if (flags == null) CodecFlags.JSON_COMPAT_FLAGS else String(flags, UTF_8).toInt()
+        if (content == null) {
+            content = try {
+                ProjectionsApplier.reconstructDocument(response)
+            } catch (e: Exception) {
+                throw CouchbaseException("Unexpected Exception while decoding Sub-Document get", e)
+            }
+        }
+
+        val expiration = parseExpiry(exptime)
+        return GetResult.withKnownExpiry(id, cas, convertedFlags, content!!, expiration)
+    }
+
+    private fun parseExpiry(expiryBytes: ByteArray?): Instant? {
+        if (expiryBytes == null) return null
+        val epochSecond = String(expiryBytes, UTF_8).toLong()
+        return if (epochSecond == 0L) null else Instant.ofEpochSecond(epochSecond)
     }
 
     private suspend fun <R : Response> exec(
@@ -75,6 +200,11 @@ public class Collection(
         if (response.status().success()) {
             return response
         }
+
+        if (response is SubdocGetResponse) {
+            response.error().ifPresent { throw it }
+        }
+
         throw DefaultErrorUtil.keyValueStatusToException(request, response)
     }
 

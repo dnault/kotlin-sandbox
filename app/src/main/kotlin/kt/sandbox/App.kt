@@ -4,7 +4,6 @@
 package kt.sandbox
 
 import com.couchbase.client.kotlin.Cluster
-import com.couchbase.client.kotlin.RequestOptions
 import kotlinx.coroutines.DEBUG_PROPERTY_NAME
 import kotlinx.coroutines.DEBUG_PROPERTY_VALUE_ON
 import kotlinx.coroutines.runBlocking
@@ -54,9 +53,13 @@ internal fun foo() = runBlocking {
     collection.get("foo")
     println("done loading foo 3 times")
 
-    println(
-        collection.get("foo", options = RequestOptions(timeout = Duration.ofMillis(1)))
-            .content.toString(UTF_8)
+    println("result! " +
+            collection.get(
+                "foo",
+                withExpiry = true,
+                projections = listOf("__crypt_one.alg")
+            ).content.toString(UTF_8)
+//    ).content
     )
 
 //

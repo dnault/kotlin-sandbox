@@ -1,27 +1,25 @@
 package com.couchbase.client.kotlin.kv
 
-import java.util.*
+import java.time.Instant
 
-public data class GetResult(val cas: Long, val flags: Int, val expiry: Optional<Long>, val content: ByteArray) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
+public class GetResult private constructor(
+    public val id: String,
+    public val cas: Long,
+    public val flags: Int,
+    public val content: ByteArray,
+    public val isExpiryKnown: Boolean,
+    expiry: Instant?,
+) {
+    internal companion object {
+        fun withKnownExpiry(id: String, cas: Long, flags: Int, content: ByteArray, expiry: Instant?) =
+            GetResult(id, cas, flags, content, true, expiry)
 
-        other as GetResult
-
-        if (cas != other.cas) return false
-        if (flags != other.flags) return false
-        if (expiry != other.expiry) return false
-        if (!content.contentEquals(other.content)) return false
-
-        return true
+        fun withUnknownExpiry(id: String, cas: Long, flags: Int, content: ByteArray) =
+            GetResult(id, cas, flags, content, false, null)
     }
 
-    override fun hashCode(): Int {
-        var result = cas.hashCode()
-        result = 31 * result + flags.hashCode()
-        result = 31 * result + expiry.hashCode()
-        result = 31 * result + content.contentHashCode()
-        return result
-    }
+    public val expiry: Instant? = expiry
+        get() = if (!isExpiryKnown) throw IllegalStateException(
+            "Expiry is not available because `withExpiry=true` was not used in the call to `get`.")
+        else field
 }
