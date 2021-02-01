@@ -20,6 +20,6 @@ public class GetResult private constructor(
 
     public val expiry: Instant? = expiry
         get() = if (!isExpiryKnown) throw IllegalStateException(
-            "Expiry is not available because `withExpiry=true` was not used in the call to `get`.")
+            "Expiry is not available because `get` was called without `withExpiry=true`.")
         else field
 }

@@ -4,6 +4,9 @@
 package kt.sandbox
 
 import com.couchbase.client.kotlin.Cluster
+import com.couchbase.client.kotlin.kv.Durability
+import com.couchbase.client.kotlin.kv.PersistTo
+import com.couchbase.client.kotlin.kv.ReplicateTo
 import kotlinx.coroutines.DEBUG_PROPERTY_NAME
 import kotlinx.coroutines.DEBUG_PROPERTY_VALUE_ON
 import kotlinx.coroutines.runBlocking
@@ -24,6 +27,10 @@ public fun main() {
 }
 
 internal fun foo() = runBlocking {
+
+    println(Durability.majority())
+    println(Durability.polling(PersistTo.NONE, ReplicateTo.NONE))
+
     val cluster = Cluster.connect("localhost", "Administrator", "password")
         .waitUntilReady(Duration.ofSeconds(10))
 
@@ -53,11 +60,22 @@ internal fun foo() = runBlocking {
     collection.get("foo")
     println("done loading foo 3 times")
 
+
+    collection.upsert("foo", "xyzzy",
+        //expiry = Expiry.Relative(Duration.ofSeconds(3)),
+        //durability = Durability.polling(PersistTo.TWO, ReplicateTo.NONE)
+        durability = Durability.polling(PersistTo.NONE, ReplicateTo.NONE),
+
+//        expiry = Exp
+    )
+
+    collection.get("foo", projections = listOfNotNull())
+
     println("result! " +
             collection.get(
                 "foo",
                 withExpiry = true,
-                projections = listOf("__crypt_one.alg")
+                projections = listOf("__crypt_one.alg", "")
             ).content.toString(UTF_8)
 //    ).content
     )

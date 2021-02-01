@@ -29,7 +29,10 @@ import com.couchbase.client.core.msg.Response
 import com.couchbase.client.core.msg.kv.*
 import com.couchbase.client.core.projections.ProjectionsApplier
 import com.couchbase.client.kotlin.internal.LookupInMacro
+import com.couchbase.client.kotlin.kv.Durability
+import com.couchbase.client.kotlin.kv.Expiry
 import com.couchbase.client.kotlin.kv.GetResult
+import com.couchbase.client.kotlin.kv.MutationResult
 import kotlinx.coroutines.future.await
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time.Instant
@@ -50,11 +53,51 @@ public class Collection internal constructor(
     private fun RequestOptions.actualRetryStrategy() = retryStrategy ?: env.retryStrategy()
     private fun RequestOptions.actualSpan(name: String) = env.requestTracer().requestSpan(name, parentSpan)
 
+    public suspend fun upsert(
+        id: String,
+        content: Any?,
+        options: RequestOptions = RequestOptions.DEFAULT,
+        durability: Durability? = null,
+        expiry: Expiry? = null,
+    ): MutationResult {
+        TODO()
+    }
+//
+//    private fun upsertRequest(id: String, content: Any?, options: RequestOptions): UpsertRequest? {
+//        Validators.notNullOrEmpty(id, "Id") { ReducedKeyValueErrorContext.create(id, collectionIdentifier) }
+//        Validators.notNull(content, "Content", { ReducedKeyValueErrorContext.create(id, collectionIdentifier) })
+//        val timeout: Duration =
+//            com.couchbase.client.java.AsyncCollection.decideKvTimeout(opts, environment.timeoutConfig())
+//        val retryStrategy: RetryStrategy = opts.retryStrategy().orElse(environment.retryStrategy())
+//        val transcoder: Transcoder = if (opts.transcoder() == null) environment.transcoder() else opts.transcoder()
+//        val span: RequestSpan = environment
+//            .requestTracer()
+//            .requestSpan(TracingIdentifiers.SPAN_REQUEST_KV_UPSERT, opts.parentSpan().orElse(null))
+//        val encodeSpan: RequestSpan = environment
+//            .requestTracer()
+//            .requestSpan(TracingIdentifiers.SPAN_REQUEST_ENCODING, span)
+//        val start = System.nanoTime()
+//        val encoded: Transcoder.EncodedValue
+//        encoded = try {
+//            transcoder.encode(content)
+//        } finally {
+//            encodeSpan.end()
+//        }
+//        val end = System.nanoTime()
+//        val expiry: Long = opts.expiry().encode(environment.eventBus())
+//        val request = UpsertRequest(id, encoded.encoded(), expiry, encoded.flags(),
+//            timeout, coreContext, collectionIdentifier, retryStrategy, opts.durabilityLevel(), span)
+//        request.context()
+//            .clientContext(opts.clientContext())
+//            .encodeLatency(end - start)
+//        return request
+//    }
+
     public suspend fun get(
         id: String,
+        options: RequestOptions = RequestOptions.DEFAULT,
         withExpiry: Boolean = false,
         projections: List<String> = emptyList(),
-        options: RequestOptions = RequestOptions.DEFAULT,
     ): GetResult {
 
         if (!withExpiry && projections.isEmpty()) {
