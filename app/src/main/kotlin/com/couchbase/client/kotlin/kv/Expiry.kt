@@ -25,9 +25,9 @@ public sealed class Expiry {
     }
 
     public companion object {
+        private val RELATIVE_EXPIRY_CUTOFF_SECONDS = DAYS.toSeconds(30).toInt()
+
         public fun absolute(instant: Instant): Absolute = Absolute(instant)
         public fun relative(duration: Duration): Relative = Relative(duration)
     }
 }
-
-private val RELATIVE_EXPIRY_CUTOFF_SECONDS = DAYS.toSeconds(30).toInt()

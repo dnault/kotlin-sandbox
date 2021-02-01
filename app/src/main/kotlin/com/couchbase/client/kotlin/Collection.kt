@@ -57,7 +57,7 @@ public class Collection internal constructor(
         id: String,
         content: Any?,
         options: RequestOptions = RequestOptions.DEFAULT,
-        durability: Durability? = null,
+        durability: Durability = Durability.inMemoryOnActive(),
         expiry: Expiry? = null,
     ): MutationResult {
         TODO()

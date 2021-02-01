@@ -29,7 +29,8 @@ public fun main() {
 internal fun foo() = runBlocking {
 
     println(Durability.majority())
-    println(Durability.polling(PersistTo.NONE, ReplicateTo.NONE))
+    println(Durability.polling(ReplicateTo.NONE))
+    println(Durability.inMemoryOnActive())
 
     val cluster = Cluster.connect("localhost", "Administrator", "password")
         .waitUntilReady(Duration.ofSeconds(10))
@@ -64,9 +65,11 @@ internal fun foo() = runBlocking {
     collection.upsert("foo", "xyzzy",
         //expiry = Expiry.Relative(Duration.ofSeconds(3)),
         //durability = Durability.polling(PersistTo.TWO, ReplicateTo.NONE)
-        durability = Durability.polling(PersistTo.NONE, ReplicateTo.NONE),
-
+//        durability = Durability.polling(PersistTo.NONE, ReplicateTo.NONE),
+//
 //        expiry = Exp
+        //expiry = Expiry.absolute(Instant.now()),
+        durability = Durability.polling(ReplicateTo.THREE, PersistTo.NONE)
     )
 
     collection.get("foo", projections = listOfNotNull())
