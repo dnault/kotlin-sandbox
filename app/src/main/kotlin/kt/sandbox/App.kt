@@ -4,14 +4,16 @@
 package kt.sandbox
 
 import com.couchbase.client.kotlin.Cluster
+import com.couchbase.client.kotlin.RequestOptions
 import com.couchbase.client.kotlin.kv.Durability
-import com.couchbase.client.kotlin.kv.PersistTo
+import com.couchbase.client.kotlin.kv.Expiry
 import com.couchbase.client.kotlin.kv.ReplicateTo
 import kotlinx.coroutines.DEBUG_PROPERTY_NAME
 import kotlinx.coroutines.DEBUG_PROPERTY_VALUE_ON
 import kotlinx.coroutines.runBlocking
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time.Duration
+import java.time.Instant
 
 internal class App {
     val greeting: String
@@ -28,8 +30,10 @@ public fun main() {
 
 internal fun foo() = runBlocking {
 
+
+    println(Expiry.Absolute(Instant.now()))
     println(Durability.majority())
-    println(Durability.polling(ReplicateTo.NONE))
+    println(Durability.polling(ReplicateTo.ONE))
     println(Durability.inMemoryOnActive())
 
     val cluster = Cluster.connect("localhost", "Administrator", "password")
@@ -62,23 +66,25 @@ internal fun foo() = runBlocking {
     println("done loading foo 3 times")
 
 
-    collection.upsert("foo", "xyzzy",
+    println(collection.upsert("magicWord", "\"xyzzy\"".toByteArray(UTF_8),
+
+
         //expiry = Expiry.Relative(Duration.ofSeconds(3)),
         //durability = Durability.polling(PersistTo.TWO, ReplicateTo.NONE)
 //        durability = Durability.polling(PersistTo.NONE, ReplicateTo.NONE),
 //
 //        expiry = Exp
         //expiry = Expiry.absolute(Instant.now()),
-        durability = Durability.polling(ReplicateTo.THREE, PersistTo.NONE)
-    )
+        durability = Durability.persistToMajority(),
+        options = RequestOptions()
+    ))
 
-    collection.get("foo", projections = listOfNotNull())
 
     println("result! " +
             collection.get(
                 "foo",
                 withExpiry = true,
-                projections = listOf("__crypt_one.alg", "")
+                projections = listOf("__crypt_one.alg")
             ).content.toString(UTF_8)
 //    ).content
     )
@@ -91,4 +97,3 @@ internal fun foo() = runBlocking {
 //    )
 
 }
-

@@ -7,22 +7,12 @@ import com.couchbase.client.core.service.kv.Observe.ObserveReplicateTo
 
 public sealed class Durability {
 
-    public object InMemoryOnActive : Durability() {
+    internal object InMemoryOnActive : Durability() {
         override fun toString(): String = "InMemoryOnActive"
     }
 
-    public class Synchronous internal constructor(
-        public val level: DurabilityLevel,
-    ) : Durability() {
-        override fun toString(): String = "Synchronous($level)"
-    }
-
-    public class Polling internal constructor(
-        public val replicateTo: ReplicateTo,
-        public val persistTo: PersistTo,
-    ) : Durability() {
-        override fun toString(): String = "Polling(replicateTo=$replicateTo, persistTo=$persistTo)"
-    }
+    internal data class Synchronous(val level: DurabilityLevel) : Durability()
+    internal data class Polling(val replicateTo: ReplicateTo, val persistTo: PersistTo) : Durability()
 
     public companion object {
         /**
@@ -45,7 +35,8 @@ public sealed class Durability {
          * behaves just like [inMemoryOnActive].
          */
         public fun polling(replicateTo: ReplicateTo, persistTo: PersistTo = PersistTo.NONE): Durability =
-            Polling(replicateTo, persistTo)
+            if (replicateTo == ReplicateTo.NONE && persistTo == PersistTo.NONE) InMemoryOnActive
+            else Polling(replicateTo, persistTo)
 
         /**
          * The mutation must be replicated to (that is, held in the memory
