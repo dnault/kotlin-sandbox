@@ -4,13 +4,12 @@
 package kt.sandbox
 
 import com.couchbase.client.kotlin.Cluster
-import com.couchbase.client.kotlin.RequestOptions
-import com.couchbase.client.kotlin.codec.JacksonJsonSerializer
-import com.couchbase.client.kotlin.codec.KotlinxSerializer
-import com.couchbase.client.kotlin.codec.typeRef
+import com.couchbase.client.kotlin.codec.*
 import com.couchbase.client.kotlin.kv.Durability
 import com.couchbase.client.kotlin.kv.Expiry
 import com.couchbase.client.kotlin.kv.ReplicateTo
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.DEBUG_PROPERTY_NAME
 import kotlinx.coroutines.DEBUG_PROPERTY_VALUE_ON
 import kotlinx.coroutines.runBlocking
@@ -64,11 +63,11 @@ internal fun foo() = runBlocking {
 
 //    println("loading foo 3 times")
 
-   // val serializer = JacksonJsonSerializer(mapper)
-    val serializer = KotlinxSerializer()
-//    val serializer = MoshiSerializer(Moshi.Builder()
-//        .addLast(KotlinJsonAdapterFactory())
-//        .build())
+    // val serializer = JacksonJsonSerializer(mapper)
+//    val serializer: JsonSerializer = KotlinxSerializer()
+    val serializer :JsonSerializer = MoshiSerializer(Moshi.Builder()
+        .addLast(KotlinJsonAdapterFactory())
+        .build())
 
     println(serializer.deserialize("null".toByteArray(UTF_8), typeRef<String>()))
 
@@ -82,9 +81,9 @@ internal fun foo() = runBlocking {
     println(t)
     val obj = Project("Hank", "English")
 
-    println("kotlinx serialize: "+serializer.serialize(obj))
+    println("kotlinx serialize: " + serializer.serialize(obj))
 
-//    collection.upsert("bar", serializer.serialize(listOf(obj)))
+    collection.upsert("bar", listOf(obj, obj))
 
     val out = collection.get("bar").contentAs<List<Project>>(serializer)!!
     println("*** $out")
@@ -96,7 +95,7 @@ internal fun foo() = runBlocking {
     println(proj.name)
 
 
-    collection.upsert("zoinks", serializer.serialize(mapOf("foo" to mapOf("x" to "y"))))
+    collection.upsert("zoinks2", mapOf("foo" to mapOf("x" to "y")))
 
     println("class: ${out.first().javaClass}")
 
@@ -106,20 +105,28 @@ internal fun foo() = runBlocking {
 //    println("done loading foo 3 times")
 //
 
-    println(collection.upsert("magicWord",
+    println("$$$" + collection.upsert("magicWord", listOf(Project("xyzzy", "ick", listOf("1")))))
+
+    val w = runCatching { collection.get("magicWord") }
+        .mapCatching { it.contentAs<List<Project>>(KotlinxJsonSerializer()) }
+        .getOrThrow()
+
+     println("$$$" + w)
+
+
 //        "xyzzy".toByteArray(UTF_8),
-        "\"xyzzy\"".toByteArray(UTF_8),
+//        "\"xyzzy\"".toByteArray(UTF_8),
 
 
-        //expiry = Expiry.Relative(Duration.ofSeconds(3)),
-        //durability = Durability.polling(PersistTo.TWO, ReplicateTo.NONE)
+    //expiry = Expiry.Relative(Duration.ofSeconds(3)),
+    //durability = Durability.polling(PersistTo.TWO, ReplicateTo.NONE)
 //        durability = Durability.polling(PersistTo.NONE, ReplicateTo.NONE),
 //
 //        expiry = Exp
-        //  expiry = Expiry.absolute(Instant.now()),
-        durability = Durability.persistToMajority(),
-        options = RequestOptions()
-    ))
+    //  expiry = Expiry.absolute(Instant.now()),
+//        durability = Durability.persistToMajority(),
+//        options = RequestOptions()
+//    ))
 
 
 //    println("result! " +
@@ -147,3 +154,5 @@ internal fun dumpFlags(flags: Int) {
 
 
 }
+
+internal fun ByteArray.toStringUtf8() = toString(UTF_8)

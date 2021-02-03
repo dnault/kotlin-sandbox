@@ -23,7 +23,7 @@ public class Project(
 
 
     override fun toString(): String {
-        return "I am a real project(name='$name', language='$language')"
+        return "I am a real project(name='$name', language='$language', oops=$oops)"
     }
 }
 

@@ -4,30 +4,15 @@ import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.JsonReader
 import com.squareup.moshi.Moshi
 import okio.Buffer
-import java.nio.charset.StandardCharsets
+import java.lang.reflect.Type
 
 public class MoshiSerializer(private val mapper: Moshi) : JsonSerializer {
-    override fun serialize(value: Any?): ByteArray {
-        if (value == null) {
-            return "null".toByteArray(StandardCharsets.UTF_8)
-        }
-
-        // So Moshi doesn't complain about not being able to serialize
-        // singletonList and friends.
-        val normalizedClass = preferCollectionInterface(value.javaClass)
+    override fun <T> serialize(value: T?, typeRef: TypeRef<T>): ByteArray {
+        if (value == null) return "null".toByteArray()
 
         val buffer = Buffer()
-        mapper.adapter<Any>(normalizedClass).toJson(buffer, value)
+        mapper.adapter<T>(typeRef.type).toJson(buffer, value)
         return buffer.readByteArray()
-    }
-
-    private fun preferCollectionInterface(clazz: Class<*>): Class<*> {
-        return when {
-            List::class.java.isAssignableFrom(clazz) -> List::class.java
-            Map::class.java.isAssignableFrom(clazz) -> Map::class.java
-            Set::class.java.isAssignableFrom(clazz) -> Set::class.java
-            else -> clazz
-        }
     }
 
     override fun <T> deserialize(json: ByteArray, typeRef: TypeRef<T>): T? {

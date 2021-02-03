@@ -31,6 +31,10 @@ import com.couchbase.client.core.projections.ProjectionsApplier
 import com.couchbase.client.core.service.kv.Observe
 import com.couchbase.client.core.service.kv.ObserveContext
 import com.couchbase.client.core.util.Validators
+import com.couchbase.client.kotlin.codec.JsonSerializer
+import com.couchbase.client.kotlin.codec.KotlinxJsonSerializer
+import com.couchbase.client.kotlin.codec.TypeRef
+import com.couchbase.client.kotlin.codec.typeRef
 import com.couchbase.client.kotlin.internal.LookupInMacro
 import com.couchbase.client.kotlin.kv.Durability
 import com.couchbase.client.kotlin.kv.Durability.Synchronous
@@ -82,14 +86,25 @@ public class Collection internal constructor(
         Observe.poll(ctx).toFuture().await()
     }
 
-    public suspend fun upsert(
+    public suspend inline fun <reified T> upsert(
         id: String,
-        content: ByteArray,
+        content: T,
+        options: RequestOptions = RequestOptions.DEFAULT,
+        durability: Durability = Durability.inMemoryOnActive(),
+        expiry: Expiry = Expiry.none(),
+    ) : MutationResult {
+        return upsertWithReifiedType(id, content, typeRef(), options, durability, expiry)
+    }
+
+    public suspend fun <T> upsertWithReifiedType(
+        id: String,
+        content: T,
+        contentType: TypeRef<T>,
         options: RequestOptions = RequestOptions.DEFAULT,
         durability: Durability = Durability.inMemoryOnActive(),
         expiry: Expiry = Expiry.none(),
     ): MutationResult {
-        val request = upsertRequest(id, content, options, durability, expiry)
+        val request = upsertRequest(id, content, contentType, options, durability, expiry)
         try {
             val response = exec(request, options)
 
@@ -104,9 +119,10 @@ public class Collection internal constructor(
         }
     }
 
-    private fun upsertRequest(
+    private fun <T> upsertRequest(
         id: String,
-        content: ByteArray,
+        content: T,
+        contentType: TypeRef<T>,
         options: RequestOptions,
         durability: Durability,
         expiry: Expiry,
@@ -119,6 +135,8 @@ public class Collection internal constructor(
         val span = options.actualSpan(TracingIdentifiers.SPAN_REQUEST_KV_UPSERT)
         val encodeSpan = env.requestTracer().requestSpan(TracingIdentifiers.SPAN_REQUEST_ENCODING, span)
 
+
+
         val encodingNanos = measureNanoTime {
 //            val encoded: Transcoder.EncodedValue
 //            encoded = try {
@@ -129,9 +147,12 @@ public class Collection internal constructor(
             }
         }
 
+        val serializer :JsonSerializer = KotlinxJsonSerializer()
+
+
         val contentFlags = CodecFlags.JSON_COMPAT_FLAGS // XXX
 //        val contentFlags = CodecFlags.STRING_COMPAT_FLAGS // XXX
-        val encodedContent = content;
+        val encodedContent = serializer.serialize(content, contentType)
 
         val syncDurability = if (durability is Synchronous) durability.level else null
         val request = UpsertRequest(id, encodedContent, expiry.encode(), contentFlags,
