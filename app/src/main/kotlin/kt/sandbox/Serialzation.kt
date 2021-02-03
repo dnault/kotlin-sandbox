@@ -18,7 +18,10 @@ import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 public class Project(
     public var name: String,
     public var language: String,
+    public val oops : List<String> = listOf("a", "b", "c"),
 ) {
+
+
     override fun toString(): String {
         return "I am a real project(name='$name', language='$language')"
     }

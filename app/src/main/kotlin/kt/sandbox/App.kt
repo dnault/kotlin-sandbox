@@ -6,6 +6,7 @@ package kt.sandbox
 import com.couchbase.client.kotlin.Cluster
 import com.couchbase.client.kotlin.RequestOptions
 import com.couchbase.client.kotlin.codec.JacksonJsonSerializer
+import com.couchbase.client.kotlin.codec.KotlinxSerializer
 import com.couchbase.client.kotlin.codec.typeRef
 import com.couchbase.client.kotlin.kv.Durability
 import com.couchbase.client.kotlin.kv.Expiry
@@ -63,7 +64,8 @@ internal fun foo() = runBlocking {
 
 //    println("loading foo 3 times")
 
-    val serializer = JacksonJsonSerializer(mapper)
+   // val serializer = JacksonJsonSerializer(mapper)
+    val serializer = KotlinxSerializer()
 //    val serializer = MoshiSerializer(Moshi.Builder()
 //        .addLast(KotlinJsonAdapterFactory())
 //        .build())
@@ -80,7 +82,9 @@ internal fun foo() = runBlocking {
     println(t)
     val obj = Project("Hank", "English")
 
-    collection.upsert("bar", serializer.serialize(listOf(obj)))
+    println("kotlinx serialize: "+serializer.serialize(obj))
+
+//    collection.upsert("bar", serializer.serialize(listOf(obj)))
 
     val out = collection.get("bar").contentAs<List<Project>>(serializer)!!
     println("*** $out")
