@@ -130,6 +130,7 @@ public class Collection internal constructor(
         }
 
         val contentFlags = CodecFlags.JSON_COMPAT_FLAGS // XXX
+//        val contentFlags = CodecFlags.STRING_COMPAT_FLAGS // XXX
         val encodedContent = content;
 
         val syncDurability = if (durability is Synchronous) durability.level else null

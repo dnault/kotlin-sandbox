@@ -5,6 +5,9 @@ package kt.sandbox
 
 import com.couchbase.client.kotlin.Cluster
 import com.couchbase.client.kotlin.RequestOptions
+import com.couchbase.client.kotlin.codec.JacksonJsonSerializer
+import com.couchbase.client.kotlin.codec.reify
+import com.couchbase.client.kotlin.codec.typeRef
 import com.couchbase.client.kotlin.kv.Durability
 import com.couchbase.client.kotlin.kv.Expiry
 import com.couchbase.client.kotlin.kv.ReplicateTo
@@ -59,14 +62,44 @@ internal fun foo() = runBlocking {
 
     println(collection)
 
-    println("loading foo 3 times")
-    collection.get("foo")
-    collection.get("foo")
-    collection.get("foo")
-    println("done loading foo 3 times")
+//    println("loading foo 3 times")
+
+    val serializer = JacksonJsonSerializer(mapper)
+//    val serializer = MoshiSerializer(Moshi.Builder()
+//        .addLast(KotlinJsonAdapterFactory())
+//        .build())
+
+    println(serializer.deserialize("null".toByteArray(UTF_8), typeRef<String>()))
+
+    val t = typeRef<List<String>>()
+
+    println(t)
+    println(reify<List<String>>())
+    val obj = Project("Hank", "English")
+
+    collection.upsert("bar", serializer.serialize(listOf(obj)))
+
+    val out: List<Project> = collection.get("bar").contentAs<List<Project>>(serializer)!!
+    collection.get("bar").contentAs<List<Project>>(serializer)
 
 
-    println(collection.upsert("magicWord", "\"xyzzy\"".toByteArray(UTF_8),
+    val proj = out.first()
+    println(proj.name)
+
+
+    collection.upsert("zoinks", serializer.serialize(mapOf("foo" to mapOf("x" to "y"))))
+
+    println("class: ${out.first().javaClass}")
+
+
+//    collection.get("foo")
+//    collection.get("foo")
+//    println("done loading foo 3 times")
+//
+
+    println(collection.upsert("magicWord",
+//        "xyzzy".toByteArray(UTF_8),
+        "\"xyzzy\"".toByteArray(UTF_8),
 
 
         //expiry = Expiry.Relative(Duration.ofSeconds(3)),
@@ -74,20 +107,20 @@ internal fun foo() = runBlocking {
 //        durability = Durability.polling(PersistTo.NONE, ReplicateTo.NONE),
 //
 //        expiry = Exp
-        //expiry = Expiry.absolute(Instant.now()),
+        //  expiry = Expiry.absolute(Instant.now()),
         durability = Durability.persistToMajority(),
         options = RequestOptions()
     ))
 
 
-    println("result! " +
-            collection.get(
-                "foo",
-                withExpiry = true,
-                projections = listOf("__crypt_one.alg")
-            ).content.toString(UTF_8)
-//    ).content
-    )
+//    println("result! " +
+//            collection.get(
+//                "foo",
+//                withExpiry = true,
+//                projections = listOf("__crypt_one.alg")
+//            ).content.toString(UTF_8)
+////    ).content
+//    )
 
 //
 //    collection.get("foo") { timeout = Duration.ofMillis(0) }
@@ -95,5 +128,13 @@ internal fun foo() = runBlocking {
 //    println(
 //        collection.get("foo").content.toString(UTF_8)
 //    )
+
+
+}
+
+internal fun dumpFlags(flags: Int) {
+// 50333696
+    // CodecFlags.extractCommonFlags()
+
 
 }

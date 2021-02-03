@@ -1,5 +1,7 @@
 package com.couchbase.client.kotlin.kv
 
+import com.couchbase.client.kotlin.codec.typeRef
+import com.couchbase.client.kotlin.codec.JsonSerializer
 import java.time.Instant
 
 public class GetResult private constructor(
@@ -22,4 +24,9 @@ public class GetResult private constructor(
         get() = if (!isExpiryKnown) throw IllegalStateException(
             "Expiry is not available because `get` was called without `withExpiry=true`.")
         else field
+
+    public inline fun <reified T> contentAs(serializer: JsonSerializer): T? {
+        return serializer.deserialize(content, typeRef())
+    }
+
 }

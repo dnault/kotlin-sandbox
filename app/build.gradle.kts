@@ -8,7 +8,12 @@
 
 plugins {
     // Apply the org.jetbrains.kotlin.jvm Plugin to add support for Kotlin.
-    id("org.jetbrains.kotlin.jvm") version "1.4.20"
+//    id("org.jetbrains.kotlin.jvm") version "1.4.20"
+    kotlin("jvm") version "1.4.21"
+    kotlin("plugin.serialization") version "1.4.21"
+
+
+
 
     // Apply the application plugin to add support for building a CLI application in Java.
     application
@@ -29,6 +34,13 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.4.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.0.1")
+
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.12.1")
+    implementation("com.squareup.moshi:moshi:1.11.0")
+    implementation("com.squareup.moshi:moshi-kotlin:1.11.0")
+
+
 
     implementation("com.couchbase.client:core-io:2.1.2-SNAPSHOT")
 

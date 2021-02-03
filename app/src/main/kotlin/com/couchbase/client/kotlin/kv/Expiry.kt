@@ -8,16 +8,16 @@ import java.util.concurrent.TimeUnit.MILLISECONDS
 public sealed class Expiry {
     internal abstract fun encode(): Long
 
-    internal object None : Expiry() {
+    public object None : Expiry() {
         override fun encode(): Long = 0;
         override fun toString(): String = "None"
     }
 
-    internal data class Absolute internal constructor(val instant: Instant) : Expiry() {
+    public data class Absolute internal constructor(val instant: Instant) : Expiry() {
         override fun encode(): Long = instant.epochSecond
     }
 
-    internal data class Relative internal constructor(val duration: Duration) : Expiry() {
+    public data class Relative internal constructor(val duration: Duration) : Expiry() {
         override fun encode(): Long {
             val seconds: Long = duration.seconds
             if (seconds < RELATIVE_EXPIRY_CUTOFF_SECONDS) return seconds
