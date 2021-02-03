@@ -6,7 +6,6 @@ package kt.sandbox
 import com.couchbase.client.kotlin.Cluster
 import com.couchbase.client.kotlin.RequestOptions
 import com.couchbase.client.kotlin.codec.JacksonJsonSerializer
-import com.couchbase.client.kotlin.codec.reify
 import com.couchbase.client.kotlin.codec.typeRef
 import com.couchbase.client.kotlin.kv.Durability
 import com.couchbase.client.kotlin.kv.Expiry
@@ -71,15 +70,21 @@ internal fun foo() = runBlocking {
 
     println(serializer.deserialize("null".toByteArray(UTF_8), typeRef<String>()))
 
+    val x = serializer.deserialize("[\"nool\"]".toByteArray(UTF_8), typeRef<List<String>>())
+
+    println(x)
+    println(x?.javaClass)
+
     val t = typeRef<List<String>>()
 
     println(t)
-    println(reify<List<String>>())
     val obj = Project("Hank", "English")
 
     collection.upsert("bar", serializer.serialize(listOf(obj)))
 
-    val out: List<Project> = collection.get("bar").contentAs<List<Project>>(serializer)!!
+    val out = collection.get("bar").contentAs<List<Project>>(serializer)!!
+    println("*** $out")
+
     collection.get("bar").contentAs<List<Project>>(serializer)
 
 

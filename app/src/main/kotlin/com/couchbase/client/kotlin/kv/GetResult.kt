@@ -1,7 +1,7 @@
 package com.couchbase.client.kotlin.kv
 
-import com.couchbase.client.kotlin.codec.typeRef
 import com.couchbase.client.kotlin.codec.JsonSerializer
+import com.couchbase.client.kotlin.codec.typeRef
 import java.time.Instant
 
 public class GetResult private constructor(

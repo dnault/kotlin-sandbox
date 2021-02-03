@@ -7,14 +7,11 @@ import java.lang.reflect.Type
 /**
  * A reified type. Conveys generic type information at run time.
  *
- * Create an anonymous subclass parameterized with the type you want to represent.
- * For example:
+ * Create new instances with the [typeRef] factory method:
  *
  * ```
- * TypeRef<List<String>> listOfStrings = new TypeRef<List<String>>(){};
+ * val listOfStrings = typeRef<List<String>>()
  * ```
- *
- * Immutable.
  *
  * Uses the technique described in Neal Gafter's article on
  * [Super Type Tokens](http://gafter.blogspot.com/2006/12/super-type-tokens.html).
@@ -35,10 +32,6 @@ public abstract class TypeRef<T> protected constructor() {
     }
 }
 
-public inline fun <reified T : Any> typeRef(): TypeRef<T> {
+public inline fun <reified T> typeRef(): TypeRef<T> {
     return object : TypeRef<T>() {}
-}
-
-public inline fun <reified T : Any> reify(): Type {
-    return object : TypeRef<T>() {}.type
 }
