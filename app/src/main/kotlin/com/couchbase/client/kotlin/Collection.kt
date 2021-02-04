@@ -31,16 +31,14 @@ import com.couchbase.client.core.projections.ProjectionsApplier
 import com.couchbase.client.core.service.kv.Observe
 import com.couchbase.client.core.service.kv.ObserveContext
 import com.couchbase.client.core.util.Validators
-import com.couchbase.client.kotlin.codec.JsonSerializer
-import com.couchbase.client.kotlin.codec.KotlinxJsonSerializer
-import com.couchbase.client.kotlin.codec.TypeRef
-import com.couchbase.client.kotlin.codec.typeRef
+import com.couchbase.client.kotlin.codec.*
 import com.couchbase.client.kotlin.internal.LookupInMacro
 import com.couchbase.client.kotlin.kv.Durability
 import com.couchbase.client.kotlin.kv.Durability.Synchronous
 import com.couchbase.client.kotlin.kv.Expiry
 import com.couchbase.client.kotlin.kv.GetResult
 import com.couchbase.client.kotlin.kv.MutationResult
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import kotlinx.coroutines.future.await
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time.Instant
@@ -53,6 +51,10 @@ public class Collection internal constructor(
     public val bucketName: String,
     private val core: Core,
 ) {
+    // todo get from environment
+    public val defaultTranscoder: Transcoder = JsonTranscoder(
+        JacksonJsonSerializer(jacksonObjectMapper()))
+
     private val env: CoreEnvironment
         get() = core.context().environment()
 
@@ -90,10 +92,11 @@ public class Collection internal constructor(
         id: String,
         content: T,
         options: RequestOptions = RequestOptions.DEFAULT,
+        transcoder: Transcoder = defaultTranscoder,
         durability: Durability = Durability.inMemoryOnActive(),
         expiry: Expiry = Expiry.none(),
-    ) : MutationResult {
-        return upsertWithReifiedType(id, content, typeRef(), options, durability, expiry)
+    ): MutationResult {
+        return upsertWithReifiedType(id, content, typeRef(), options, transcoder, durability, expiry)
     }
 
     public suspend fun <T> upsertWithReifiedType(
@@ -101,10 +104,11 @@ public class Collection internal constructor(
         content: T,
         contentType: TypeRef<T>,
         options: RequestOptions = RequestOptions.DEFAULT,
+        transcoder: Transcoder,
         durability: Durability = Durability.inMemoryOnActive(),
         expiry: Expiry = Expiry.none(),
     ): MutationResult {
-        val request = upsertRequest(id, content, contentType, options, durability, expiry)
+        val request = upsertRequest(id, content, contentType, options, transcoder, durability, expiry)
         try {
             val response = exec(request, options)
 
@@ -124,6 +128,7 @@ public class Collection internal constructor(
         content: T,
         contentType: TypeRef<T>,
         options: RequestOptions,
+        transcoder: Transcoder,
         durability: Durability,
         expiry: Expiry,
     ): UpsertRequest {
@@ -131,31 +136,20 @@ public class Collection internal constructor(
         Validators.notNull(content, "Content", { ReducedKeyValueErrorContext.create(id, collectionIdentifier) })
         val timeout = options.actualKvTimeout()
         val retryStrategy = options.actualRetryStrategy()
-        //val transcoder: Transcoder = if (opts.transcoder() == null) environment.transcoder() else opts.transcoder()
         val span = options.actualSpan(TracingIdentifiers.SPAN_REQUEST_KV_UPSERT)
         val encodeSpan = env.requestTracer().requestSpan(TracingIdentifiers.SPAN_REQUEST_ENCODING, span)
 
-
-
+        var encodedContent: Content
         val encodingNanos = measureNanoTime {
-//            val encoded: Transcoder.EncodedValue
-//            encoded = try {
-//                transcoder.encode(content)
             try {
+                encodedContent = transcoder.encode(content, contentType)
             } finally {
                 encodeSpan.end()
             }
         }
 
-        val serializer :JsonSerializer = KotlinxJsonSerializer()
-
-
-        val contentFlags = CodecFlags.JSON_COMPAT_FLAGS // XXX
-//        val contentFlags = CodecFlags.STRING_COMPAT_FLAGS // XXX
-        val encodedContent = serializer.serialize(content, contentType)
-
         val syncDurability = if (durability is Synchronous) durability.level else null
-        val request = UpsertRequest(id, encodedContent, expiry.encode(), contentFlags,
+        val request = UpsertRequest(id, encodedContent.bytes, expiry.encode(), encodedContent.flags,
             timeout, core.context(), collectionIdentifier, retryStrategy, syncDurability.toOptional(), span)
         request.context().encodeLatency(encodingNanos)
         return request
@@ -179,7 +173,7 @@ public class Collection internal constructor(
             )
             try {
                 exec(request, options).apply {
-                    return GetResult.withUnknownExpiry(id, cas(), flags(), content())
+                    return GetResult.withUnknownExpiry(id, cas(), flags(), content(), defaultTranscoder)
                 }
             } finally {
                 request.endSpan()
@@ -300,7 +294,7 @@ public class Collection internal constructor(
         }
 
         val expiration = parseExpiry(exptime)
-        return GetResult.withKnownExpiry(id, cas, convertedFlags, content!!, expiration)
+        return GetResult.withKnownExpiry(id, cas, convertedFlags, content!!, defaultTranscoder, expiration)
     }
 
     private fun parseExpiry(expiryBytes: ByteArray?): Instant? {

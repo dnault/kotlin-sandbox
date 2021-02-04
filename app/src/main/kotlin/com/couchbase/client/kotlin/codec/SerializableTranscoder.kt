@@ -7,7 +7,7 @@ import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 
 public object SerializableTranscoder : Transcoder {
-    override fun <T> encode(input: T?, type: TypeRef<T>): Content {
+    override fun <T> doEncode(input: T?, type: TypeRef<T>): Content {
         return try {
             val bos = ByteArrayOutputStream()
             ObjectOutputStream(bos).use {

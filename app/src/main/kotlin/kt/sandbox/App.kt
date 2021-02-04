@@ -65,9 +65,11 @@ internal fun foo() = runBlocking {
 
     // val serializer = JacksonJsonSerializer(mapper)
 //    val serializer: JsonSerializer = KotlinxSerializer()
-    val serializer :JsonSerializer = MoshiSerializer(Moshi.Builder()
+    val serializer: JsonSerializer = MoshiSerializer(Moshi.Builder()
         .addLast(KotlinJsonAdapterFactory())
         .build())
+
+    val transcoder = JsonTranscoder(serializer)
 
     println(serializer.deserialize("null".toByteArray(UTF_8), typeRef<String>()))
 
@@ -81,14 +83,16 @@ internal fun foo() = runBlocking {
     println(t)
     val obj = Project("Hank", "English")
 
-    println("kotlinx serialize: " + serializer.serialize(obj))
-
     collection.upsert("bar", listOf(obj, obj))
 
-    val out = collection.get("bar").contentAs<List<Project>>(serializer)!!
+    collection.upsert("raw", Content.binary("boogers".toByteArray()))
+
+    println("got raw: " + collection.get("raw").contentAs<ByteArray>()?.toStringUtf8())
+
+    val out = collection.get("bar").contentAs<List<Project>>(transcoder)!!
     println("*** $out")
 
-    collection.get("bar").contentAs<List<Project>>(serializer)
+    collection.get("bar").contentAs<List<Project>>(transcoder)
 
 
     val proj = out.first()
@@ -108,10 +112,10 @@ internal fun foo() = runBlocking {
     println("$$$" + collection.upsert("magicWord", listOf(Project("xyzzy", "ick", listOf("1")))))
 
     val w = runCatching { collection.get("magicWord") }
-        .mapCatching { it.contentAs<List<Project>>(KotlinxJsonSerializer()) }
+        .mapCatching { it.contentAs<List<Project>>(JsonTranscoder(KotlinxJsonSerializer())) }
         .getOrThrow()
 
-     println("$$$" + w)
+    println("$$$" + w)
 
 
 //        "xyzzy".toByteArray(UTF_8),

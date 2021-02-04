@@ -5,7 +5,7 @@ import com.couchbase.client.core.error.InvalidArgumentException
 import kt.sandbox.toStringUtf8
 
 public object RawStringTranscoder : Transcoder {
-    override fun <T> encode(input: T?, type: TypeRef<T>): Content {
+    override fun <T> doEncode(input: T?, type: TypeRef<T>): Content {
         return when (input) {
             is String -> Content.string(input)
             else -> throw InvalidArgumentException.fromMessage(
