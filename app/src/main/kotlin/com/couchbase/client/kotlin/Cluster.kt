@@ -23,9 +23,12 @@ import com.couchbase.client.core.env.Authenticator
 import com.couchbase.client.core.env.CoreEnvironment
 import com.couchbase.client.core.env.PasswordAuthenticator
 import com.couchbase.client.core.env.SeedNode
+import com.couchbase.client.core.msg.kv.MutationToken
 import com.couchbase.client.core.msg.query.QueryRequest
 import com.couchbase.client.core.service.ServiceType
 import com.couchbase.client.core.util.ConnectionStringUtil
+import com.couchbase.client.kotlin.codec.JsonSerializer
+import com.couchbase.client.kotlin.query.QueryProfile
 import com.couchbase.client.kotlin.query.QueryResult
 import kotlinx.coroutines.future.await
 import java.time.Duration
@@ -44,7 +47,6 @@ public class Cluster internal constructor(
     }
 
     public companion object {
-
         public fun connect(connectionString: String, username: String, password: String): Cluster {
             return connect(connectionString, ClusterOptions(PasswordAuthenticator.create(username, password)))
         }
@@ -69,7 +71,7 @@ public class Cluster internal constructor(
     public suspend fun waitUntilReady(
         timeout: Duration,
         serviceTypes: Set<ServiceType> = emptySet(),
-        desiredState: ClusterState = ClusterState.ONLINE
+        desiredState: ClusterState = ClusterState.ONLINE,
     ): Cluster {
         WaitUntilReadyHelper.waitUntilReady(core, serviceTypes, timeout, desiredState, Optional.empty()).await()
         return this
@@ -80,11 +82,65 @@ public class Cluster internal constructor(
         return Bucket(name, core)
     }
 
+
+    public data class QueryTuning(
+        val maxParallelism: Int? = null,
+        val scanCap:Int? = null,
+        val pipelineBatch: Int? = null,
+        val pipelineCap: Int? = null,
+    )
+
+    open public class QueryScanConsistency {
+        public companion object {
+          //  public fun consistentWith(Collection<MutationToken> mutations)
+        }
+        public object NotBounded : QueryScanConsistency()
+        public object RequestPlus : QueryScanConsistency()
+    }
+
+    public data class QueryDiagnostics(
+        val clientContextId: String? = UUID.randomUUID().toString(),
+        val metrics: Boolean = false,
+        val profile: QueryProfile = QueryProfile.OFF,
+    )
+
+
     public suspend fun query(
         statement: String,
+        options: RequestOptions = RequestOptions.DEFAULT,
+        namedParameters: Map<String, Any?> = emptyMap(),
+        positionalParameters: List<Any?> = emptyList(),
         readonly: Boolean = false,
-        options: RequestOptions = RequestOptions.DEFAULT
-    ): QueryResult {
+        adhoc: Boolean = true,
+        flexIndex: Boolean = false,
+
+        serializer: JsonSerializer? = null,
+        raw: Map<String, Any?> = emptyMap(),
+
+        consistency: QueryScanConsistency = QueryScanConsistency.NotBounded,
+        diagnostics: QueryDiagnostics? = null,
+        tuning: QueryTuning? = null,
+
+
+
+        // diagnostics
+        clientContextId: String? = UUID.randomUUID().toString(),
+        metrics: Boolean = false,
+        profile: QueryProfile = QueryProfile.OFF,
+
+        // tuning
+        maxParallelism: Int? = null,
+        scanCap: Int? = null,
+        pipelineBatch: Int? = null,
+        pipelineCap: Int? = null,
+
+        // consistency
+        scanWait: String? = null,
+        scanConsistency: QueryScanConsistency = QueryScanConsistency.NotBounded,
+        consistentWith: List<MutationToken>? = null,
+
+
+        ): QueryResult {
         TODO("what about these?")
         val query = null;
         val contextId = null;

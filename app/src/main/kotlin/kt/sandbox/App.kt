@@ -3,11 +3,14 @@
  */
 package kt.sandbox
 
+import com.couchbase.client.core.msg.kv.MutationToken
 import com.couchbase.client.kotlin.Cluster
 import com.couchbase.client.kotlin.codec.*
 import com.couchbase.client.kotlin.kv.Durability
 import com.couchbase.client.kotlin.kv.Expiry
 import com.couchbase.client.kotlin.kv.ReplicateTo
+import com.couchbase.client.kotlin.query.formatForQuery
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.DEBUG_PROPERTY_NAME
@@ -16,6 +19,7 @@ import kotlinx.coroutines.runBlocking
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time.Duration
 import java.time.Instant
+import java.util.*
 
 internal class App {
     val greeting: String
@@ -27,8 +31,23 @@ internal class App {
 
 public fun main() {
     System.setProperty(DEBUG_PROPERTY_NAME, DEBUG_PROPERTY_VALUE_ON)
-    foo()
+//    foo()
+
+
+    println(jacksonObjectMapper().writeValueAsString(listOf(
+        MutationToken(1, 2, 3, "foo"),
+        MutationToken(1, 2, 4, "foo"),
+        MutationToken(1, 2, 1, "foo"),
+        MutationToken(1, 2, -11, "bar")
+    ).formatForQuery()))
+
 }
+
+
+
+
+internal fun zot(foo: String = UUID.randomUUID().toString().also { println("calculated!") }): String = foo
+
 
 internal fun foo() = runBlocking {
 
@@ -86,8 +105,7 @@ internal fun foo() = runBlocking {
     collection.upsert("bar", listOf(obj, obj))
 
     collection.upsert("raw", Content.binary("boogers".toByteArray()))
-
-    println("got raw: " + collection.get("raw").contentAs<ByteArray>()?.toStringUtf8())
+    println("got raw: " + collection.get("raw").content.toStringUtf8())
 
     val out = collection.get("bar").contentAs<List<Project>>(transcoder)!!
     println("*** $out")
