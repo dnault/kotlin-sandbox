@@ -17,26 +17,30 @@
 package com.couchbase.client.kotlin
 
 import com.couchbase.client.core.Core
+import com.couchbase.client.core.cnc.TracingIdentifiers
 import com.couchbase.client.core.diagnostics.ClusterState
 import com.couchbase.client.core.diagnostics.WaitUntilReadyHelper
 import com.couchbase.client.core.env.Authenticator
 import com.couchbase.client.core.env.CoreEnvironment
 import com.couchbase.client.core.env.PasswordAuthenticator
 import com.couchbase.client.core.env.SeedNode
-import com.couchbase.client.core.msg.kv.MutationToken
 import com.couchbase.client.core.msg.query.QueryRequest
 import com.couchbase.client.core.service.ServiceType
 import com.couchbase.client.core.util.ConnectionStringUtil
-import com.couchbase.client.kotlin.codec.JsonSerializer
-import com.couchbase.client.kotlin.query.QueryProfile
-import com.couchbase.client.kotlin.query.QueryResult
+import com.couchbase.client.core.util.Golang
+import com.couchbase.client.kotlin.codec.*
+import com.couchbase.client.kotlin.query.*
+import com.couchbase.client.kotlin.query.QueryScanConsistency.NotBounded
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.future.await
+import kt.sandbox.toStringUtf8
 import java.time.Duration
 import java.util.*
 
 public class Cluster internal constructor(
     environment: CoreEnvironment,
-    authenticator: Authenticator,
+    private val authenticator: Authenticator,
     seedNodes: Set<SeedNode>,
 ) {
 
@@ -68,6 +72,9 @@ public class Cluster internal constructor(
 
     private fun RequestOptions.actualRetryStrategy() = retryStrategy ?: core.context().environment().retryStrategy()
 
+    private fun RequestOptions.actualSpan(name: String) = core.context().environment().requestTracer().requestSpan(name, parentSpan)
+
+
     public suspend fun waitUntilReady(
         timeout: Duration,
         serviceTypes: Set<ServiceType> = emptySet(),
@@ -83,81 +90,67 @@ public class Cluster internal constructor(
     }
 
 
-    public data class QueryTuning(
-        val maxParallelism: Int? = null,
-        val scanCap:Int? = null,
-        val pipelineBatch: Int? = null,
-        val pipelineCap: Int? = null,
-    )
-
-    open public class QueryScanConsistency {
-        public companion object {
-          //  public fun consistentWith(Collection<MutationToken> mutations)
-        }
-        public object NotBounded : QueryScanConsistency()
-        public object RequestPlus : QueryScanConsistency()
-    }
-
-    public data class QueryDiagnostics(
-        val clientContextId: String? = UUID.randomUUID().toString(),
-        val metrics: Boolean = false,
-        val profile: QueryProfile = QueryProfile.OFF,
-    )
-
-
     public suspend fun query(
         statement: String,
         options: RequestOptions = RequestOptions.DEFAULT,
-        namedParameters: Map<String, Any?> = emptyMap(),
-        positionalParameters: List<Any?> = emptyList(),
+        parameters: QueryParameters = QueryParameters.None,
         readonly: Boolean = false,
         adhoc: Boolean = true,
-        flexIndex: Boolean = false,
 
         serializer: JsonSerializer? = null,
         raw: Map<String, Any?> = emptyMap(),
 
-        consistency: QueryScanConsistency = QueryScanConsistency.NotBounded,
-        diagnostics: QueryDiagnostics? = null,
-        tuning: QueryTuning? = null,
+        consistency: QueryScanConsistency = NotBounded,
+        diagnostics: QueryDiagnostics = QueryDiagnostics.DEFAULT,
+        tuning: QueryTuning = QueryTuning.DEFAULT,
 
-
-
-        // diagnostics
         clientContextId: String? = UUID.randomUUID().toString(),
-        metrics: Boolean = false,
-        profile: QueryProfile = QueryProfile.OFF,
-
-        // tuning
-        maxParallelism: Int? = null,
-        scanCap: Int? = null,
-        pipelineBatch: Int? = null,
-        pipelineCap: Int? = null,
-
-        // consistency
-        scanWait: String? = null,
-        scanConsistency: QueryScanConsistency = QueryScanConsistency.NotBounded,
-        consistentWith: List<MutationToken>? = null,
-
 
         ): QueryResult {
-        TODO("what about these?")
-        val query = null;
-        val contextId = null;
-        val queryContext = null;
 
-        val request = QueryRequest(
-            options.actualQueryTimeout(),
+        val timeout = options.actualQueryTimeout()
+
+        // use interface type so Moshi doesn't freak out
+        val queryJson : MutableMap<String, Any?> = HashMap<String, Any?>()
+
+        queryJson["statement"] = statement
+        queryJson["timeout"] = Golang.encodeDurationToMs(timeout)
+        clientContextId?.let { queryJson["client_context_id"] = it }
+        if (readonly) {
+            queryJson["readonly"] = true
+        }
+
+        consistency.inject(queryJson)
+        diagnostics.inject(queryJson)
+        tuning.inject(queryJson)
+        parameters.inject(queryJson)
+
+        queryJson.putAll(raw)
+
+//        val actualSerializer = JacksonJsonSerializer(jsonMapper())
+//        val actualSerializer = KotlinxJsonSerializer()
+        val actualSerializer = MoshiJsonSerializer(Moshi.Builder().add(KotlinJsonAdapterFactory()).build())
+
+        // use serializer from environment
+      //  val type : TypeRef<Map<String, *>> = typeRef()
+
+        val queryBytes = actualSerializer.serialize(queryJson, typeRef())
+
+        println(queryBytes.toStringUtf8())
+
+        val request = QueryRequest(timeout,
             core.context(),
             options.actualRetryStrategy(),
-            null,
+            authenticator,
             statement,
-            query,
+            queryBytes,
             readonly,
-            contextId,
-            options.parentSpan,
-            queryContext
-        )
+            clientContextId,
+            options.actualSpan(TracingIdentifiers.SPAN_REQUEST_QUERY),
+            null)
+        request.context().clientContext(options.clientContext)
+
+
         core.send(request)
         val response = request.response().await()
 

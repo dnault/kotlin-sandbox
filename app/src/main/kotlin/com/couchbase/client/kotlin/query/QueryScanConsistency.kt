@@ -1,9 +1,34 @@
 package com.couchbase.client.kotlin.query
 
 import com.couchbase.client.core.msg.kv.MutationToken
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.couchbase.client.core.util.Golang
+import com.couchbase.client.kotlin.kv.MutationState
+import java.time.Duration
 
-public enum class QueryScanConsistency {
+public sealed class QueryScanConsistency(
+    private val wireName: String?,
+    private val scanWait: Duration?,
+) {
+
+    internal open fun inject(queryJson: MutableMap<String, Any?>): Unit {
+        wireName?.let { queryJson["scan_consistency"] = it }
+        scanWait?.let { queryJson["scan_wait"] = Golang.encodeDurationToMs(it) }
+    }
+
+    public companion object {
+        public fun notBounded(): QueryScanConsistency =
+            NotBounded
+
+        public fun requestPlus(scanWait: Duration? = null): QueryScanConsistency =
+            RequestPlus(scanWait)
+
+        public fun consistentWith(tokens: MutationState, scanWait: Duration? = null): QueryScanConsistency =
+            ConsistentWith(tokens, scanWait)
+
+        public fun consistentWith(tokens: Iterable<MutationToken>, scanWait: Duration? = null): QueryScanConsistency =
+            ConsistentWith(MutationState(tokens), scanWait)
+    }
+
     /**
      * The indexer will return whatever state it has to the query engine at the time of query.
      *
@@ -11,9 +36,7 @@ public enum class QueryScanConsistency {
      * the fastest mode, because we avoid the cost of obtaining the vector, and we also avoid any wait for the index to
      * catch up to the vector.
      */
-    NOT_BOUNDED {
-        override fun toString(): String = "not_bounded"
-    },
+    public object NotBounded : QueryScanConsistency(null, null)
 
     /**
      * The indexer will wait until all mutations have been processed at the time of request before returning to the
@@ -23,7 +46,16 @@ public enum class QueryScanConsistency {
      * vector is used as a lower bound for the statements in the request. If there are DML statements in the request,
      * RYOW ("read your own write") is also applied within the request.
      */
-    REQUEST_PLUS {
-        override fun toString(): String = "request_plus"
+    public class RequestPlus internal constructor(scanWait: Duration? = null) :
+        QueryScanConsistency("request_plus", scanWait)
+
+    public class ConsistentWith internal constructor(
+        private val tokens: MutationState,
+        scanWait: Duration? = null,
+    ) : QueryScanConsistency("at_plus", scanWait) {
+        override fun inject(queryJson: MutableMap<String, Any?>): Unit {
+            super.inject(queryJson)
+            queryJson["scan_vectors"] = tokens.export()
+        }
     }
 }

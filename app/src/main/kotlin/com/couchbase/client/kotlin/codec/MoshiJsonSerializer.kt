@@ -6,7 +6,7 @@ import com.squareup.moshi.Moshi
 import okio.Buffer
 import java.lang.reflect.Type
 
-public class MoshiSerializer(private val mapper: Moshi) : JsonSerializer {
+public class MoshiJsonSerializer(private val mapper: Moshi) : JsonSerializer {
     override fun <T> serialize(value: T?, typeRef: TypeRef<T>): ByteArray {
         if (value == null) return "null".toByteArray()
 

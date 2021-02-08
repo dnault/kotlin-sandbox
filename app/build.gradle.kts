@@ -42,7 +42,7 @@ dependencies {
 
 
 
-    implementation("com.couchbase.client:core-io:2.1.2-SNAPSHOT")
+    implementation("com.couchbase.client:core-io:2.1.3-SNAPSHOT")
 
     implementation("io.github.microutils:kotlin-logging-jvm:2.0.4")
     implementation("org.apache.logging.log4j:log4j-slf4j-impl:2.11.2")

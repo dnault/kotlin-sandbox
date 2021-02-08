@@ -6,11 +6,11 @@ package kt.sandbox
 import com.couchbase.client.core.msg.kv.MutationToken
 import com.couchbase.client.kotlin.Cluster
 import com.couchbase.client.kotlin.codec.*
-import com.couchbase.client.kotlin.kv.Durability
-import com.couchbase.client.kotlin.kv.Expiry
-import com.couchbase.client.kotlin.kv.ReplicateTo
-import com.couchbase.client.kotlin.query.formatForQuery
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.couchbase.client.kotlin.query.QueryDiagnostics
+import com.couchbase.client.kotlin.query.QueryParameters.Named
+import com.couchbase.client.kotlin.query.QueryProfile
+import com.couchbase.client.kotlin.query.QueryScanConsistency.Companion.consistentWith
+import com.couchbase.client.kotlin.query.QueryTuning
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.DEBUG_PROPERTY_NAME
@@ -18,7 +18,6 @@ import kotlinx.coroutines.DEBUG_PROPERTY_VALUE_ON
 import kotlinx.coroutines.runBlocking
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time.Duration
-import java.time.Instant
 import java.util.*
 
 internal class App {
@@ -31,37 +30,45 @@ internal class App {
 
 public fun main() {
     System.setProperty(DEBUG_PROPERTY_NAME, DEBUG_PROPERTY_VALUE_ON)
-//    foo()
+    foo()
 
-
-    println(jacksonObjectMapper().writeValueAsString(listOf(
-        MutationToken(1, 2, 3, "foo"),
-        MutationToken(1, 2, 4, "foo"),
-        MutationToken(1, 2, 1, "foo"),
-        MutationToken(1, 2, -11, "bar")
-    ).formatForQuery()))
 
 }
 
 
-
+public data class Dingus(public val name : String)
 
 internal fun zot(foo: String = UUID.randomUUID().toString().also { println("calculated!") }): String = foo
 
 
 internal fun foo() = runBlocking {
 
-
-    println(Expiry.Absolute(Instant.now()))
-    println(Durability.majority())
-    println(Durability.polling(ReplicateTo.ONE))
-    println(Durability.inMemoryOnActive())
-
     val cluster = Cluster.connect("localhost", "Administrator", "password")
         .waitUntilReady(Duration.ofSeconds(10))
 
     println("cluster ready!")
     // cluster.query("SELECT * from default")
+
+    cluster.query("select * from default",
+        parameters = Named(
+            "foo" to 123,
+            "dingus" to Dingus("Alphonse"),
+            "bar" to mapOf(
+                "123" to "xyz"),
+        ),
+        raw = mapOf("xxxx" to null),
+        diagnostics = QueryDiagnostics(metrics = true, profile = QueryProfile.TIMINGS),
+        readonly = true,
+        adhoc = true,
+
+        consistency = consistentWith(listOf(MutationToken(1,2,3,"foo"))),
+        //clientContextId = null,
+        tuning = QueryTuning(maxParallelism = 2, scanCap = 123),
+        //diagnostics = QueryDiagnostics()
+    )
+
+
+
 
     //   val cluster = Cluster.connect("localhost", "Administrator", "password")
 //    println(
@@ -84,7 +91,7 @@ internal fun foo() = runBlocking {
 
     // val serializer = JacksonJsonSerializer(mapper)
 //    val serializer: JsonSerializer = KotlinxSerializer()
-    val serializer: JsonSerializer = MoshiSerializer(Moshi.Builder()
+    val serializer: JsonSerializer = MoshiJsonSerializer(Moshi.Builder()
         .addLast(KotlinJsonAdapterFactory())
         .build())
 
@@ -103,6 +110,8 @@ internal fun foo() = runBlocking {
     val obj = Project("Hank", "English")
 
     collection.upsert("bar", listOf(obj, obj))
+
+    //collection.upsert("bar", listOf(obj, obj), expiry = Expiry.relative(Duration.ofSeconds(10)))
 
     collection.upsert("raw", Content.binary("boogers".toByteArray()))
     println("got raw: " + collection.get("raw").content.toStringUtf8())
