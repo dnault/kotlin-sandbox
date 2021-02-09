@@ -45,9 +45,7 @@ public class HostAndPort(host: String, public val port: Int) {
         return true
     }
 
-    override fun hashCode(): Int {
-        return Objects.hash(host, port)
-    }
+    override fun hashCode(): Int = Objects.hash(host, port)
 
     private fun canonicalizeIpv6Literal(ipv6Literal: String): String {
         // This "resolves" the address, but because it's an IPv6 literal no DNS lookup is required
