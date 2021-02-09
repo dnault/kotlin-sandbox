@@ -13,31 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.couchbase.client.dcp.internal
+package com.couchbase.client.dcp
 
 import java.net.InetSocketAddress
 import java.util.*
 
-internal class HostAndPort(host: String, val port: Int) {
-    private val ipv6Literal: Boolean = host.contains(":")
-    val host: String = if (ipv6Literal) canonicalizeIpv6Literal(host) else host
+public class HostAndPort(host: String, public val port: Int) {
+    private val isIpv6Literal: Boolean = host.contains(":")
+    public val host: String = if (isIpv6Literal) canonicalizeIpv6Literal(host) else host
 
-    operator fun component1(): String = host
-    operator fun component2(): Int = port
+    public operator fun component1(): String = host
+    public operator fun component2(): Int = port
 
-    fun copy(host: String = this.host, port: Int = this.port) = HostAndPort(host, port)
+    public fun copy(host: String = this.host, port: Int = this.port): HostAndPort = HostAndPort(host, port)
 
-    fun format(): String {
-        return formatHost() + ":" + port
-    }
+    public fun format(): String = "${formatHost()}:$port"
 
-    fun formatHost(): String {
-        return if (ipv6Literal) "[$host]" else host
-    }
+    public fun formatHost(): String = if (isIpv6Literal) "[$host]" else host
 
-    override fun toString(): String {
-        return format()
-    }
+    override fun toString(): String = format()
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -54,9 +48,9 @@ internal class HostAndPort(host: String, val port: Int) {
     override fun hashCode(): Int {
         return Objects.hash(host, port)
     }
-}
 
-private fun canonicalizeIpv6Literal(ipv6Literal: String): String {
-    // This "resolves" the address, but because it's an IPv6 literal no DNS lookup is required
-    return InetSocketAddress("[$ipv6Literal]", 0).hostString
+    private fun canonicalizeIpv6Literal(ipv6Literal: String): String {
+        // This "resolves" the address, but because it's an IPv6 literal no DNS lookup is required
+        return InetSocketAddress("[$ipv6Literal]", 0).hostString
+    }
 }

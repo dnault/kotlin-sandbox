@@ -3,7 +3,7 @@ package com.couchbase.client.dcp.internal.netty
 import awaitSuspend
 import com.couchbase.client.dcp.internal.BODY_LENGTH_OFFSET
 import com.couchbase.client.dcp.internal.DcpRequest
-import com.couchbase.client.dcp.internal.HostAndPort
+import com.couchbase.client.dcp.HostAndPort
 import io.netty.bootstrap.Bootstrap
 import io.netty.buffer.UnpooledByteBufAllocator
 import io.netty.channel.Channel
@@ -23,7 +23,6 @@ import io.netty.handler.logging.LogLevel
 import io.netty.handler.logging.LoggingHandler
 import io.netty.util.AttributeKey
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import mu.KotlinLogging
