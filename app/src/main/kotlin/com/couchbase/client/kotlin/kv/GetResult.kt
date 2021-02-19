@@ -14,7 +14,14 @@ public class GetResult private constructor(
     expiry: Instant?,
 ) {
     internal companion object {
-        fun withKnownExpiry(id: String, cas: Long, flags: Int, content: ByteArray, defaultTranscoder: Transcoder, expiry: Instant?) =
+        fun withKnownExpiry(
+            id: String,
+            cas: Long,
+            flags: Int,
+            content: ByteArray,
+            defaultTranscoder: Transcoder,
+            expiry: Instant?,
+        ) =
             GetResult(id, cas, flags, content, true, defaultTranscoder, expiry)
 
         fun withUnknownExpiry(id: String, cas: Long, flags: Int, content: ByteArray, defaultTranscoder: Transcoder) =

@@ -1,6 +1,5 @@
 package com.couchbase.client.dcp.internal
 
-import com.couchbase.client.dcp.NotConnectedException
 import io.netty.buffer.ByteBuf
 import io.netty.buffer.ByteBufAllocator
 import io.netty.buffer.ByteBufUtil
@@ -8,20 +7,19 @@ import io.netty.buffer.UnpooledByteBufAllocator
 import io.netty.util.ReferenceCountUtil
 import mu.KotlinLogging
 import java.nio.charset.StandardCharsets.UTF_8
-import kotlin.reflect.full.memberProperties
 
 private val logger = KotlinLogging.logger {}
 
 public class DcpRequest(
     private val opcode: Int,
     private val partition: Int = 0,
-    private val extras: (ByteBuf) -> Unit = { },
-    private val content: (ByteBuf) -> Unit = { },
+    private val extras: ByteBuf.() -> Unit = { },
+    private val content: ByteBuf.() -> Unit = { },
 ) {
     override fun toString(): String = "${javaClass.name}(opcode=${opcode},partition=${partition})"
 
     public companion object {
-        public fun version() : DcpRequest = DcpRequest(opcode = Opcode.VERSION)
+        public fun version(): DcpRequest = DcpRequest(opcode = Opcode.VERSION)
     }
 
     public fun toByteBuf(opaque: Int, allocator: ByteBufAllocator = UnpooledByteBufAllocator.DEFAULT): ByteBuf {
@@ -60,17 +58,20 @@ public class DcpRequest(
 private fun ByteBuf.writeString(value: String): ByteBuf = writeBytes(value.toByteArray(UTF_8))
 
 public fun main() {
+
+    val extra = "so extra"
+
     val request = DcpRequest(
         opcode = Opcode.DCP_NOOP,
         partition = 42,
-        extras = { it.writeString("so extra") },
-//        extras = { it.writeZero(0xff+1) },
-        content = { it.writeString("xyzzy") },
+        extras = { writeInt(extra.length) },
+//        extras = { writeZero(0xff+1) },
+        content = { writeString("xyzzy") },
     )
 
     println(request)
 
-    val message = DcpPacket(request.toByteBuf(opaque=Integer.MIN_VALUE + 1))
+    val message = DcpPacket(request.toByteBuf(opaque = Integer.MIN_VALUE + 1))
 
     println(ByteBufUtil.prettyHexDump(message.buffer))
     println(message.humanize())

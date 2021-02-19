@@ -28,11 +28,12 @@ import com.couchbase.client.core.msg.query.QueryRequest
 import com.couchbase.client.core.service.ServiceType
 import com.couchbase.client.core.util.ConnectionStringUtil
 import com.couchbase.client.core.util.Golang
-import com.couchbase.client.kotlin.codec.*
+import com.couchbase.client.kotlin.codec.JacksonJsonSerializer
+import com.couchbase.client.kotlin.codec.JsonSerializer
+import com.couchbase.client.kotlin.codec.typeRef
 import com.couchbase.client.kotlin.query.*
 import com.couchbase.client.kotlin.query.QueryScanConsistency.NotBounded
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import com.fasterxml.jackson.module.kotlin.jsonMapper
 import kotlinx.coroutines.future.await
 import kt.sandbox.toStringUtf8
 import java.time.Duration
@@ -72,7 +73,8 @@ public class Cluster internal constructor(
 
     private fun RequestOptions.actualRetryStrategy() = retryStrategy ?: core.context().environment().retryStrategy()
 
-    private fun RequestOptions.actualSpan(name: String) = core.context().environment().requestTracer().requestSpan(name, parentSpan)
+    private fun RequestOptions.actualSpan(name: String) =
+        core.context().environment().requestTracer().requestSpan(name, parentSpan)
 
 
     public suspend fun waitUntilReady(
@@ -108,10 +110,12 @@ public class Cluster internal constructor(
 
         ): QueryResult {
 
+        if (!adhoc) TODO("adhoc not implemented")
+
         val timeout = options.actualQueryTimeout()
 
         // use interface type so Moshi doesn't freak out
-        val queryJson : MutableMap<String, Any?> = HashMap<String, Any?>()
+        val queryJson: MutableMap<String, Any?> = HashMap<String, Any?>()
 
         queryJson["statement"] = statement
         queryJson["timeout"] = Golang.encodeDurationToMs(timeout)
@@ -127,18 +131,21 @@ public class Cluster internal constructor(
 
         queryJson.putAll(raw)
 
-//        val actualSerializer = JacksonJsonSerializer(jsonMapper())
+        val actualSerializer = JacksonJsonSerializer(jsonMapper())
 //        val actualSerializer = KotlinxJsonSerializer()
-        val actualSerializer = MoshiJsonSerializer(Moshi.Builder().add(KotlinJsonAdapterFactory()).build())
+//        val actualSerializer = MoshiJsonSerializer(Moshi.Builder().add(KotlinJsonAdapterFactory()).build())
 
         // use serializer from environment
-      //  val type : TypeRef<Map<String, *>> = typeRef()
+        //  val type : TypeRef<Map<String, *>> = typeRef()
 
         val queryBytes = actualSerializer.serialize(queryJson, typeRef())
 
         println(queryBytes.toStringUtf8())
 
-        val request = QueryRequest(timeout,
+        val bucketName: String? = null;
+        val scopeName: String? = null;
+        val request = QueryRequest(
+            timeout,
             core.context(),
             options.actualRetryStrategy(),
             authenticator,
@@ -147,14 +154,20 @@ public class Cluster internal constructor(
             readonly,
             clientContextId,
             options.actualSpan(TracingIdentifiers.SPAN_REQUEST_QUERY),
-            null)
+            bucketName,
+            scopeName,
+        )
         request.context().clientContext(options.clientContext)
 
-
         core.send(request)
-        val response = request.response().await()
 
-        return QueryResult()
+        println("awaiting query response")
+        val response = request.response().await()
+        println("got query response")
+
+        val defaultSerializer = JacksonJsonSerializer(jsonMapper())
+
+        return QueryResult(response, serializer ?: defaultSerializer)
     }
 
 }

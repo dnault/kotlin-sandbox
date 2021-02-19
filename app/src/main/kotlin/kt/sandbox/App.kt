@@ -3,19 +3,20 @@
  */
 package kt.sandbox
 
-import com.couchbase.client.core.msg.kv.MutationToken
 import com.couchbase.client.kotlin.Cluster
 import com.couchbase.client.kotlin.codec.*
-import com.couchbase.client.kotlin.query.QueryDiagnostics
+import com.couchbase.client.kotlin.query.QueryError
+import com.couchbase.client.kotlin.query.QueryMeta
 import com.couchbase.client.kotlin.query.QueryParameters.Named
-import com.couchbase.client.kotlin.query.QueryProfile
-import com.couchbase.client.kotlin.query.QueryScanConsistency.Companion.consistentWith
-import com.couchbase.client.kotlin.query.QueryTuning
+import com.couchbase.client.kotlin.query.QueryRow
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.DEBUG_PROPERTY_NAME
 import kotlinx.coroutines.DEBUG_PROPERTY_VALUE_ON
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.runBlocking
+import reactor.core.publisher.Flux
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time.Duration
 import java.util.*
@@ -30,18 +31,117 @@ internal class App {
 
 public fun main() {
     System.setProperty(DEBUG_PROPERTY_NAME, DEBUG_PROPERTY_VALUE_ON)
-    foo()
+    query()
 
 
 }
 
 
-public data class Dingus(public val name : String)
+public data class Dingus(public val name: String)
 
 internal fun zot(foo: String = UUID.randomUUID().toString().also { println("calculated!") }): String = foo
 
 
+internal fun query() = runBlocking {
+    val cluster = Cluster.connect("localhost", "Administrator", "password")
+        .waitUntilReady(Duration.ofSeconds(10))
+
+    println("cluster ready!")
+
+
+    val queryResult2 = cluster.query(
+        "select * from default where click = \$val",
+        //parameters = Positional("to edit"),
+        parameters = Named("val" to "to edit"),
+        readonly = true,
+        //   diagnostics = QueryDiagnostics(metrics = true),
+    )
+
+    println("unified flooooow!")
+
+    val other = cluster.bucket("other").defaultCollection()
+
+    queryResult2.unifiedFlow()
+
+        .collect {
+            when (it) {
+                is QueryRow -> {
+                    println("got row: ${it.contentAs<Map<String, Any?>>()}")
+                    other.upsert("foo", it.content, transcoder = RawJsonTranscoder)
+                }
+                is QueryError -> TODO()
+                is QueryMeta -> println("got meta: ${it}")
+            }
+        }
+
+
+
+    println("done with unified flooooow!")
+
+
+    try {
+        val queryResult = cluster.query(
+            "select * from default where click = \$val",
+            //parameters = Positional("to edit"),
+            parameters = Named("val" to "to edit"),
+            readonly = true,
+        )
+        println(queryResult.metaData().status)
+
+        val flow = queryResult.rowsAs<Map<String, Any?>>()
+        flow.collect { println(it!!["default"]) }
+
+        println("collecting again!")
+        flow.collect { println(it!!["default"]) }
+
+        println("done collecting again!")
+
+
+//        val trailer = queryResult.response.trailer().awaitSingle()
+//        println("trailer: ${trailer}")
+
+    } catch (t: Throwable) {
+        println(" collecting failed: ${t}")
+        t.printStackTrace()
+    }
+
+
+//    val flow = queryResult.response.rows().asFlow()
+
+    println(Thread.currentThread())
+
+//    try {
+//        flow
+//            .map { qcr -> qcr.data().toStringUtf8() }
+//            .collect { println("${Thread.currentThread()} ${it}") }
+//
+//    } catch (e: Exception) {
+//        println("The flow has thrown an exception: $e")
+//    }
+
+
+}
+
+
 internal fun foo() = runBlocking {
+
+//    val publisher = Flux.just("a", "b", "c")
+//    val sharedFlow = MutableSharedFlow<String?>(replay = 1000)
+//    val flow = publisher.asFlow()
+//
+//    flow.catch { }
+//
+//
+//    println("emitting")
+//    sharedFlow.emitAll(flow.onCompletion { sharedFlow.emit(null) })
+//
+//    println("collecting")
+//    sharedFlow
+//        .takeWhile { it != null }
+//        .collect { println(it) }
+//
+//    println("done collecting")
+
 
     val cluster = Cluster.connect("localhost", "Administrator", "password")
         .waitUntilReady(Duration.ofSeconds(10))
@@ -49,25 +149,24 @@ internal fun foo() = runBlocking {
     println("cluster ready!")
     // cluster.query("SELECT * from default")
 
-    cluster.query("select * from default",
-        parameters = Named(
-            "foo" to 123,
-            "dingus" to Dingus("Alphonse"),
-            "bar" to mapOf(
-                "123" to "xyz"),
-        ),
-        raw = mapOf("xxxx" to null),
-        diagnostics = QueryDiagnostics(metrics = true, profile = QueryProfile.TIMINGS),
+    val queryResult = cluster.query(
+        "select * from default",
+        //parameters = QueryParameters.Named("doo" to "bar")
+
+//        parameters = Named(
+//            "foo" to 123,
+//            "dingus" to Dingus("Alphonse"),
+//            "bar" to mapOf(
+//                "123" to "xyz"),
+//        ),
+//        raw = mapOf("xxxx" to null),
+//        diagnostics = QueryDiagnostics(metrics = true, profile = QueryProfile.TIMINGS),
         readonly = true,
-        adhoc = true,
 
-        consistency = consistentWith(listOf(MutationToken(1,2,3,"foo"))),
-        //clientContextId = null,
-        tuning = QueryTuning(maxParallelism = 2, scanCap = 123),
-        //diagnostics = QueryDiagnostics()
+//        consistency = consistentWith(listOf(MutationToken(1,2,3,"foo"))),
+//        //clientContextId = null,
+//        tuning = QueryTuning(maxParallelism = 2, scanCap = 123),
     )
-
-
 
 
     //   val cluster = Cluster.connect("localhost", "Administrator", "password")
@@ -81,9 +180,6 @@ internal fun foo() = runBlocking {
     val collection = cluster.bucket("default")
         .waitUntilReady(Duration.ofSeconds(10), setOf()).also { println("bucket ready!") }
         .defaultCollection()
-
-
-    // delay(1000)
 
     println(collection)
 
@@ -178,6 +274,7 @@ internal fun foo() = runBlocking {
 
 
 }
+
 
 internal fun dumpFlags(flags: Int) {
 // 50333696
