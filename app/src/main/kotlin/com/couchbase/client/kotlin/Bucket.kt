@@ -21,6 +21,7 @@ import com.couchbase.client.core.diagnostics.ClusterState
 import com.couchbase.client.core.diagnostics.WaitUntilReadyHelper
 import com.couchbase.client.core.io.CollectionIdentifier
 import com.couchbase.client.core.service.ServiceType
+import com.couchbase.client.kotlin.internal.toOptional
 import kotlinx.coroutines.future.await
 import java.time.Duration
 
@@ -43,4 +44,3 @@ public class Bucket internal constructor(
     }
 }
 
-internal fun <T> T?.toOptional() = java.util.Optional.ofNullable(this)

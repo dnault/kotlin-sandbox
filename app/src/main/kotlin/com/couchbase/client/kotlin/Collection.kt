@@ -33,6 +33,7 @@ import com.couchbase.client.core.service.kv.ObserveContext
 import com.couchbase.client.core.util.Validators
 import com.couchbase.client.kotlin.codec.*
 import com.couchbase.client.kotlin.internal.LookupInMacro
+import com.couchbase.client.kotlin.internal.toOptional
 import com.couchbase.client.kotlin.kv.Durability
 import com.couchbase.client.kotlin.kv.Durability.Synchronous
 import com.couchbase.client.kotlin.kv.Expiry
