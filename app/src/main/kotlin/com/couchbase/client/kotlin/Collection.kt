@@ -60,9 +60,9 @@ public class Collection internal constructor(
 
     private val collectionIdentifier = CollectionIdentifier(bucketName, Optional.of(scopeName), Optional.of(name))
 
-    private fun RequestOptions.actualKvTimeout() = timeout ?: env.timeoutConfig().kvTimeout()
-    private fun RequestOptions.actualRetryStrategy() = retryStrategy ?: env.retryStrategy()
-    private fun RequestOptions.actualSpan(name: String) = env.requestTracer().requestSpan(name, parentSpan)
+    private fun CommonOptions.actualKvTimeout() = timeout ?: env.timeoutConfig().kvTimeout()
+    private fun CommonOptions.actualRetryStrategy() = retryStrategy ?: env.retryStrategy()
+    private fun CommonOptions.actualSpan(name: String) = env.requestTracer().requestSpan(name, parentSpan)
 
     private suspend fun observe(
         request: Request<*>,
@@ -91,7 +91,7 @@ public class Collection internal constructor(
     public suspend inline fun <reified T> upsert(
         id: String,
         content: T,
-        options: RequestOptions = RequestOptions.DEFAULT,
+        options: CommonOptions = CommonOptions.DEFAULT,
         transcoder: Transcoder = defaultTranscoder,
         durability: Durability = Durability.inMemoryOnActive(),
         expiry: Expiry = Expiry.none(),
@@ -103,7 +103,7 @@ public class Collection internal constructor(
         id: String,
         content: T,
         contentType: TypeRef<T>,
-        options: RequestOptions = RequestOptions.DEFAULT,
+        options: CommonOptions = CommonOptions.DEFAULT,
         transcoder: Transcoder,
         durability: Durability = Durability.inMemoryOnActive(),
         expiry: Expiry = Expiry.none(),
@@ -127,7 +127,7 @@ public class Collection internal constructor(
         id: String,
         content: T,
         contentType: TypeRef<T>,
-        options: RequestOptions,
+        options: CommonOptions,
         transcoder: Transcoder,
         durability: Durability,
         expiry: Expiry,
@@ -156,7 +156,7 @@ public class Collection internal constructor(
 
     public suspend fun get(
         id: String,
-        options: RequestOptions = RequestOptions.DEFAULT,
+        options: CommonOptions = CommonOptions.DEFAULT,
         withExpiry: Boolean = false,
         projections: List<String> = emptyList(),
     ): GetResult {
@@ -193,7 +193,7 @@ public class Collection internal constructor(
         id: String,
         withExpiry: Boolean = false,
         projections: List<String>,
-        options: RequestOptions,
+        options: CommonOptions,
     ): SubdocGetRequest {
         validateProjections(id, projections, withExpiry)
         val commands = ArrayList<SubdocGetRequest.Command>(16)
@@ -304,7 +304,7 @@ public class Collection internal constructor(
 
     private suspend fun <R : Response> exec(
         request: KeyValueRequest<R>,
-        options: RequestOptions,
+        options: CommonOptions,
     ): R {
         val response = core.exec(request, options)
         if (response.status().success()) {
@@ -323,7 +323,7 @@ public class Collection internal constructor(
     }
 }
 
-internal suspend fun <R : Response> Core.exec(request: Request<R>, options: RequestOptions): R {
+internal suspend fun <R : Response> Core.exec(request: Request<R>, options: CommonOptions): R {
     request.context().clientContext(options.clientContext)
     send(request)
     return request.response().await()

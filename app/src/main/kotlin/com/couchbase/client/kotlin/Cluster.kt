@@ -70,12 +70,12 @@ public class Cluster internal constructor(
         }
     }
 
-    private fun RequestOptions.actualQueryTimeout() =
+    private fun CommonOptions.actualQueryTimeout() =
         timeout ?: core.context().environment().timeoutConfig().queryTimeout()
 
-    private fun RequestOptions.actualRetryStrategy() = retryStrategy ?: core.context().environment().retryStrategy()
+    private fun CommonOptions.actualRetryStrategy() = retryStrategy ?: core.context().environment().retryStrategy()
 
-    private fun RequestOptions.actualSpan(name: String) =
+    private fun CommonOptions.actualSpan(name: String) =
         core.context().environment().requestTracer().requestSpan(name, parentSpan)
 
     public suspend fun waitUntilReady(
@@ -96,7 +96,7 @@ public class Cluster internal constructor(
 
     public suspend fun query(
         statement: String,
-        options: RequestOptions = RequestOptions.DEFAULT,
+        options: CommonOptions = CommonOptions.DEFAULT,
         parameters: QueryParameters = QueryParameters.None,
         readonly: Boolean = false,
         adhoc: Boolean = true,
