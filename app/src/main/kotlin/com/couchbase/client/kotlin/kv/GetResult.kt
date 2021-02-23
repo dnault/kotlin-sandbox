@@ -44,7 +44,7 @@ public class GetResult private constructor(
             "Expiry is not available because `get` was called without `withExpiry=true`.")
         else field
 
-    public inline fun <reified T> contentAs(transcoder: Transcoder = defaultTranscoder): T? {
+    public inline fun <reified T> contentAs(transcoder: Transcoder = defaultTranscoder): T {
         return transcoder.decode(content, typeRef(), flags)
     }
 

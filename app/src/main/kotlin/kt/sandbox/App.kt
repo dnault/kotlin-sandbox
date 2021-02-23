@@ -5,21 +5,22 @@ package kt.sandbox
 
 import com.couchbase.client.kotlin.Cluster
 import com.couchbase.client.kotlin.codec.*
-import com.couchbase.client.kotlin.query.QueryError
-import com.couchbase.client.kotlin.query.QueryMeta
+import com.couchbase.client.kotlin.kv.GetResult
+import com.couchbase.client.kotlin.kv.MutationResult
+import com.couchbase.client.kotlin.query.QueryDiagnostics
+import com.couchbase.client.kotlin.query.QueryMetaData
 import com.couchbase.client.kotlin.query.QueryParameters.Named
 import com.couchbase.client.kotlin.query.QueryRow
+import com.fasterxml.jackson.databind.node.ObjectNode
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import kotlinx.coroutines.DEBUG_PROPERTY_NAME
-import kotlinx.coroutines.DEBUG_PROPERTY_VALUE_ON
-import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.runBlocking
-import reactor.core.publisher.Flux
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time.Duration
+import java.time.Instant
 import java.util.*
+import kotlin.system.measureTimeMillis
 
 internal class App {
     val greeting: String
@@ -33,7 +34,14 @@ public fun main() {
     System.setProperty(DEBUG_PROPERTY_NAME, DEBUG_PROPERTY_VALUE_ON)
     query()
 
+    println(Long.MAX_VALUE)
+    println(Instant.ofEpochMilli(Long.MAX_VALUE))
 
+
+//    val mapper = jsonMapper { addModule(Jdk8Module()) }
+//
+//    println(mapper.writeValueAsString(NullNode.instance))
+//    println(mapper.readTree("null").javaClass)
 }
 
 
@@ -48,67 +56,132 @@ internal fun query() = runBlocking {
 
     println("cluster ready!")
 
+    val other = cluster.bucket("other").defaultCollection()
+    val content : String? = null;
+    other.upsert("null", Content.json("null"))
+
+    val s : String? = other.get("null").contentAs<String?>()
+    println(s == null)
+
+    println(other.get("null").content.toStringUtf8())
+
+//    return@runBlocking
 
     val queryResult2 = cluster.query(
-        "select * from default where click = \$val",
+        "select meta().id, * from default as doc where click = \$val",
         //parameters = Positional("to edit"),
         parameters = Named("val" to "to edit"),
         readonly = true,
-        //   diagnostics = QueryDiagnostics(metrics = true),
+        diagnostics = QueryDiagnostics(metrics = true),
     )
 
     println("unified flooooow!")
 
-    val other = cluster.bucket("other").defaultCollection()
+    for (i in 1..100) {
 
-    queryResult2.unifiedFlow()
+        var results = listOf<GetResult>()
 
-        .collect {
-            when (it) {
-                is QueryRow -> {
-                    println("got row: ${it.contentAs<Map<String, Any?>>()}")
-                    other.upsert("foo", it.content, transcoder = RawJsonTranscoder)
-                }
-                is QueryError -> TODO()
-                is QueryMeta -> println("got meta: ${it}")
-            }
+        val deferrals = ArrayList<Deferred<GetResult>>()
+
+
+        val elapsed = measureTimeMillis {
+            val ids = listOf("foo", "huh?", "whatzit", "whosit", "zot")
+            results = ids.asFlow()
+                .map { async { other.get(it) } }
+                .toList().awaitAll();
+
+
+//            /results.addAll(deferrals.awaitAll())
         }
 
-
-
-    println("done with unified flooooow!")
-
-
-    try {
-        val queryResult = cluster.query(
-            "select * from default where click = \$val",
-            //parameters = Positional("to edit"),
-            parameters = Named("val" to "to edit"),
-            readonly = true,
-        )
-        println(queryResult.metaData().status)
-
-        val flow = queryResult.rowsAs<Map<String, Any?>>()
-        flow.collect { println(it!!["default"]) }
-
-        println("collecting again!")
-        flow.collect { println(it!!["default"]) }
-
-        println("done collecting again!")
-
-
-//        val trailer = queryResult.response.trailer().awaitSingle()
-//        println("trailer: ${trailer}")
-
-    } catch (t: Throwable) {
-        println(" collecting failed: ${t}")
-        t.printStackTrace()
+        println("results!!!! in ${elapsed}ms  " + results.map { it.content.toStringUtf8() });
     }
 
 
-//    val flow = queryResult.response.rows().asFlow()
+    val foo: Deferred<MutationResult> = async { other.upsert("huh?", "who?") }
+    foo.await()
 
-    println(Thread.currentThread())
+    val x : String? = null;
+    other.upsert("foo", x)
+
+//    val elaspedMillis = measureTimeMillis {
+
+
+//        queryResult2.rows()
+//            .flatMapMerge(1000) {
+//                println("${Thread.currentThread()} got result item ${it}")
+//
+//                if (it is QueryRow) {
+//                    println(it.content.toStringUtf8())
+//                }
+//
+//                when (it) {
+//                    is QueryRow -> flow {
+//                        println("${Thread.currentThread()} upserting")
+//                        delay(1000)
+//
+//                        val row = it.contentAs<ObjectNode>()
+//                        val content = row.path("doc") as ObjectNode
+//                        val id = row.path("id").textValue()
+//
+//                        emit(other.upsert(id, content))
+//                    }
+//
+//                    is QueryError -> TODO()
+//                    is QueryMetaData -> flow {
+//                        println("got meta, not emitting: ${it}")
+//                    }
+//                }
+//            }
+//            .collect {
+//                println("${Thread.currentThread()} ${it}")
+//            }
+//    }
+//            println(Thread.currentThread())
+//            when (it) {
+//                is QueryRow -> {
+//                    println("got row: ${it.contentAs<Map<String, Any?>>()}")
+//                    other.upsert("foo", it.content, transcoder = RawJsonTranscoder)
+//                }
+//                is QueryError -> TODO()
+//                is QueryMeta -> println("got meta: ${it}")
+//            }
+//        }
+
+
+//    println("done with unified flooooow! in ${elaspedMillis}ms")
+
+//
+//    try {
+//        val queryResult = cluster.query(
+//            "select * from default where click = \$val",
+//            //parameters = Positional("to edit"),
+//            parameters = Named("val" to "to edit"),
+//            readonly = true,
+//        )
+//        println(queryResult.metaData().status)
+//
+//        val flow = queryResult.rowsAs<Map<String, Any?>>()
+//        flow.collect { println(it!!["default"]) }
+//
+//        println("collecting again!")
+//        flow.collect { println(it!!["default"]) }
+//
+//        println("done collecting again!")
+//
+//
+////        val trailer = queryResult.response.trailer().awaitSingle()
+////        println("trailer: ${trailer}")
+//
+//    } catch (t: Throwable) {
+//        println(" collecting failed: ${t}")
+//        t.printStackTrace()
+//    }
+//
+//
+////    val flow = queryResult.response.rows().asFlow()
+//
+//    println(Thread.currentThread())
 
 //    try {
 //        flow
@@ -212,7 +285,7 @@ internal fun foo() = runBlocking {
     collection.upsert("raw", Content.binary("boogers".toByteArray()))
     println("got raw: " + collection.get("raw").content.toStringUtf8())
 
-    val out = collection.get("bar").contentAs<List<Project>>(transcoder)!!
+    val out = collection.get("bar").contentAs<List<Project>>(transcoder)
     println("*** $out")
 
     collection.get("bar").contentAs<List<Project>>(transcoder)

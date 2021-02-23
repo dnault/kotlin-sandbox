@@ -133,7 +133,6 @@ public class Collection internal constructor(
         expiry: Expiry,
     ): UpsertRequest {
         Validators.notNullOrEmpty(id, "Id") { ReducedKeyValueErrorContext.create(id, collectionIdentifier) }
-        Validators.notNull(content, "Content", { ReducedKeyValueErrorContext.create(id, collectionIdentifier) })
         val timeout = options.actualKvTimeout()
         val retryStrategy = options.actualRetryStrategy()
         val span = options.actualSpan(TracingIdentifiers.SPAN_REQUEST_KV_UPSERT)

@@ -21,6 +21,12 @@ public class QueryMetrics(
     public val resultSize: Long
         get() = getLong("resultSize")
 
+    public val usedMemory: Long
+        get() = getLong("usedMemory")
+
+    public val serviceLoad: Long
+        get() = getLong("serviceLoad")
+
     public val mutationCount: Long
         get() = getLong("mutationCount")
 

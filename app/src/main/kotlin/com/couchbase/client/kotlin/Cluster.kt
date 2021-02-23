@@ -38,6 +38,7 @@ import kotlinx.coroutines.future.await
 import kt.sandbox.toStringUtf8
 import java.time.Duration
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 
 public class Cluster internal constructor(
     environment: CoreEnvironment,
@@ -45,7 +46,8 @@ public class Cluster internal constructor(
     seedNodes: Set<SeedNode>,
 ) {
 
-    private val core: Core = Core.create(environment, authenticator, seedNodes)
+    private val core = Core.create(environment, authenticator, seedNodes)
+    private val bucketCache = ConcurrentHashMap<String, Bucket>()
 
     init {
         core.initGlobalConfig()
@@ -76,7 +78,6 @@ public class Cluster internal constructor(
     private fun RequestOptions.actualSpan(name: String) =
         core.context().environment().requestTracer().requestSpan(name, parentSpan)
 
-
     public suspend fun waitUntilReady(
         timeout: Duration,
         serviceTypes: Set<ServiceType> = emptySet(),
@@ -87,10 +88,11 @@ public class Cluster internal constructor(
     }
 
     public fun bucket(name: String): Bucket {
-        core.openBucket(name)
-        return Bucket(name, core)
+        return bucketCache.computeIfAbsent(name) { key ->
+            core.openBucket(key)
+            Bucket(key, core)
+        }
     }
-
 
     public suspend fun query(
         statement: String,
@@ -169,5 +171,4 @@ public class Cluster internal constructor(
 
         return QueryResult(response, serializer ?: defaultSerializer)
     }
-
 }

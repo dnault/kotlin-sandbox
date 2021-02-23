@@ -18,7 +18,9 @@ import java.lang.reflect.Type
  *
  * @param <T> The type to represent
  */
-public abstract class TypeRef<T> protected constructor() {
+public abstract class TypeRef<T> protected constructor(
+    public val nullable: Boolean,
+) {
     public val type: Type
 
     override fun toString(): String = type.typeName
@@ -33,5 +35,5 @@ public abstract class TypeRef<T> protected constructor() {
 }
 
 public inline fun <reified T> typeRef(): TypeRef<T> {
-    return object : TypeRef<T>() {}
+    return object : TypeRef<T>(nullable = null is T) {}
 }

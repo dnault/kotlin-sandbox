@@ -16,21 +16,21 @@ public class QueryRow(
     public val defaultSerializer: JsonSerializer,
 ) : QueryFlowItem() {
 
-    public inline fun <reified T> contentAs(serializer: JsonSerializer = defaultSerializer): T? {
+    public inline fun <reified T> contentAs(serializer: JsonSerializer = defaultSerializer): T {
         return serializer.deserialize(content, typeRef())
     }
 }
+//
+//public class QueryError(
+//    public val cause: Throwable,
+//) : QueryFlowItem() {
+//
+//    override fun toString(): String {
+//        return "QueryError(cause=$cause)"
+//    }
+//}
 
-public class QueryError(
-    public val cause: Throwable,
-) : QueryFlowItem() {
-
-    override fun toString(): String {
-        return "QueryError(cause=$cause)"
-    }
-}
-
-public class QueryMeta(
+public class QueryMetaData(
     private val header: QueryChunkHeader,
     private val trailer: QueryChunkTrailer,
 ) : QueryFlowItem() {

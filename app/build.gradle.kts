@@ -20,9 +20,8 @@ plugins {
 }
 
 repositories {
-    // Use JCenter for resolving dependencies.
     mavenLocal()
-    jcenter()
+    mavenCentral()
 }
 
 dependencies {
@@ -37,11 +36,10 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactive:1.4.2")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.0.1")
 
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.12.1")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.12.1")
     implementation("com.squareup.moshi:moshi:1.11.0")
     implementation("com.squareup.moshi:moshi-kotlin:1.11.0")
-
-
 
     implementation("com.couchbase.client:core-io:2.1.3-SNAPSHOT")
 
@@ -51,8 +49,13 @@ dependencies {
     implementation("com.google.guava:guava:29.0-jre")
     implementation("io.netty:netty-all:4.1.58.Final")
 
-    testImplementation("org.jetbrains.kotlin:kotlin-test")
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
+//    testImplementation("org.jetbrains.kotlin:kotlin-test")
+//    testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
+
+    testImplementation("org.assertj:assertj-core:3.19.0")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.7.1")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.7.1")
+
 }
 
 application {

@@ -2,7 +2,7 @@ package com.couchbase.client.kotlin.codec
 
 public interface Transcoder {
 
-    public fun <T> encode(input: T?, type: TypeRef<T>): Content {
+    public fun <T> encode(input: T, type: TypeRef<T>): Content {
         return if (input is Content) input // already encoded!
         else doEncode(input, type)
     }
@@ -13,7 +13,7 @@ public interface Transcoder {
      * @param input the input object to encode.
      * @return the encoded wire representation of the payload.
      */
-    public fun <T> doEncode(input: T?, type: TypeRef<T>): Content
+    public fun <T> doEncode(input: T, type: TypeRef<T>): Content
 
     /**
      * Decodes the wire representation into the entity based on the data format.
@@ -23,6 +23,6 @@ public interface Transcoder {
      * @param flags the flags on the wire
      * @return the decoded entity.
      */
-    public fun <T> decode(input: ByteArray, type: TypeRef<T>, flags: Int): T?
+    public fun <T> decode(input: ByteArray, type: TypeRef<T>, flags: Int): T
 }
 

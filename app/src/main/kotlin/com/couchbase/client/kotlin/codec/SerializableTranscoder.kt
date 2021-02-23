@@ -7,7 +7,7 @@ import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 
 public object SerializableTranscoder : Transcoder {
-    override fun <T> doEncode(input: T?, type: TypeRef<T>): Content {
+    override fun <T> doEncode(input: T, type: TypeRef<T>): Content {
         return try {
             val bos = ByteArrayOutputStream()
             ObjectOutputStream(bos).use {
@@ -20,7 +20,7 @@ public object SerializableTranscoder : Transcoder {
     }
 
     @Suppress("UNCHECKED_CAST")
-    override fun <T> decode(input: ByteArray, type: TypeRef<T>, flags: Int): T? {
+    override fun <T> decode(input: ByteArray, type: TypeRef<T>, flags: Int): T {
         return try {
             ObjectInputStream(ByteArrayInputStream(input)).use { it.readObject() as T }
         } catch (ex: java.lang.Exception) {
