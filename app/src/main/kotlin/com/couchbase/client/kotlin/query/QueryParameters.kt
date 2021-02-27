@@ -30,4 +30,9 @@ public sealed class QueryParameters {
             }
         }
     }
+
+    public companion object {
+        public fun positional(values: List<Any?>) : QueryParameters = Positional(values)
+        public fun named(values: Map<String, Any?>) : QueryParameters = Named(values)
+    }
 }

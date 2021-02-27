@@ -7,36 +7,38 @@ import com.couchbase.client.core.service.kv.Observe.ObserveReplicateTo
 
 public sealed class Durability {
 
-    internal object InMemoryOnActive : Durability() {
-        override fun toString(): String = "InMemoryOnActive"
+    public object Disabled : Durability() {
+        override fun toString(): String = "Disabled"
     }
 
-    internal data class Synchronous(val level: DurabilityLevel) : Durability()
-    internal data class Polling(val replicateTo: ReplicateTo, val persistTo: PersistTo) : Durability()
+    public data class Synchronous internal constructor(
+        val level: DurabilityLevel,
+    ) : Durability()
+
+    public data class ClientVerified internal constructor(
+        val replicateTo: ReplicateTo,
+        val persistTo: PersistTo,
+    ) : Durability()
 
     public companion object {
         /**
-         * No special durability requirements.
-         *
-         * The mutation is considered a success once the mutation is saved
-         * in RAM of the node hosting the active partition (vBucket) for the data.
+         * The SDK will report success as soon as the node hosting the
+         * active partition has the mutation in memory (but not necessarily
+         * persisted to disk).
          */
-        public fun inMemoryOnActive(): Durability = InMemoryOnActive
+        public fun disabled(): Durability = Disabled
 
         /**
          * The client will poll the server until the specified durability
          * requirements are observed.
          *
-         * This strategy is supported by all Couchbase Server versions.
-         * When using Couchbase Server 6.5 or later, prefer the other
-         * durability options.
-         *
-         * Note: polling([ReplicateTo.NONE], [PersistTo.NONE])
-         * behaves just like [inMemoryOnActive].
+         * This strategy is supported by all Couchbase Server versions,
+         * but it has drawbacks. When using Couchbase Server 6.5 or later,
+         * prefer the other durability options.
          */
-        public fun polling(replicateTo: ReplicateTo, persistTo: PersistTo = PersistTo.NONE): Durability =
-            if (replicateTo == ReplicateTo.NONE && persistTo == PersistTo.NONE) InMemoryOnActive
-            else Polling(replicateTo, persistTo)
+        public fun clientVerified(replicateTo: ReplicateTo, persistTo: PersistTo = PersistTo.NONE): Durability =
+            if (replicateTo == ReplicateTo.NONE && persistTo == PersistTo.NONE) Disabled
+            else ClientVerified(replicateTo, persistTo)
 
         /**
          * The mutation must be replicated to (that is, held in the memory

@@ -68,7 +68,7 @@ public class Collection internal constructor(
     private suspend fun observe(
         request: Request<*>,
         id: String,
-        durability: Durability.Polling,
+        durability: Durability.ClientVerified,
         cas: Long,
         mutationToken: Optional<MutationToken>,
         remove: Boolean = false,
@@ -92,10 +92,10 @@ public class Collection internal constructor(
     public suspend inline fun <reified T> upsert(
         id: String,
         content: T,
-        options: CommonOptions = CommonOptions.DEFAULT,
+        options: CommonOptions = CommonOptions.Default,
         transcoder: Transcoder = defaultTranscoder,
-        durability: Durability = Durability.inMemoryOnActive(),
-        expiry: Expiry = Expiry.none(),
+        durability: Durability = Durability.disabled(),
+        expiry: Expiry = Expiry.None,
     ): MutationResult {
         return upsertWithReifiedType(id, content, typeRef(), options, transcoder, durability, expiry)
     }
@@ -104,16 +104,16 @@ public class Collection internal constructor(
         id: String,
         content: T,
         contentType: TypeRef<T>,
-        options: CommonOptions = CommonOptions.DEFAULT,
+        options: CommonOptions,
         transcoder: Transcoder,
-        durability: Durability = Durability.inMemoryOnActive(),
-        expiry: Expiry = Expiry.none(),
+        durability: Durability,
+        expiry: Expiry,
     ): MutationResult {
         val request = upsertRequest(id, content, contentType, options, transcoder, durability, expiry)
         try {
             val response = exec(request, options)
 
-            if (durability is Durability.Polling) {
+            if (durability is Durability.ClientVerified) {
                 observe(request, id, durability, response.cas(), response.mutationToken())
             }
 
@@ -157,7 +157,7 @@ public class Collection internal constructor(
 
     public suspend fun get(
         id: String,
-        options: CommonOptions = CommonOptions.DEFAULT,
+        options: CommonOptions = CommonOptions.Default,
         withExpiry: Boolean = false,
         projections: List<String> = emptyList(),
     ): GetResult {
@@ -274,9 +274,9 @@ public class Collection internal constructor(
         var flags: ByteArray? = null
         for (value in response.values()) {
             if (value != null) {
-                if (LookupInMacro.EXPIRY_TIME.equals(value.path())) {
+                if (LookupInMacro.EXPIRY_TIME == value.path()) {
                     exptime = value.value()
-                } else if (LookupInMacro.FLAGS.equals(value.path())) {
+                } else if (LookupInMacro.FLAGS == value.path()) {
                     flags = value.value()
                 } else if (value.path().isEmpty()) {
                     content = value.value()
@@ -297,10 +297,10 @@ public class Collection internal constructor(
         return GetResult.withKnownExpiry(id, cas, convertedFlags, content!!, defaultTranscoder, expiration)
     }
 
-    private fun parseExpiry(expiryBytes: ByteArray?): Instant? {
-        if (expiryBytes == null) return null
-        val epochSecond = String(expiryBytes, UTF_8).toLong()
-        return if (epochSecond == 0L) null else Instant.ofEpochSecond(epochSecond)
+    private fun parseExpiry(expiryBytes: ByteArray?): Expiry {
+        if (expiryBytes == null) return Expiry.None
+        val epochSecond = Integer.toUnsignedLong(String(expiryBytes, UTF_8).toInt())
+        return if (epochSecond == 0L) Expiry.None else Expiry.Absolute(Instant.ofEpochSecond(epochSecond))
     }
 
     private suspend fun <R : Response> exec(

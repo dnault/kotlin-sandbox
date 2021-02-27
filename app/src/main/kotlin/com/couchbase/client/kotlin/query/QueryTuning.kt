@@ -21,10 +21,8 @@ public class QueryTuning(
         pipelineCap?.let { queryJson["pipeline_cap"] = it.toString() }
         pipelineBatch?.let { queryJson["pipeline_batch"] = it.toString() }
         scanCap?.let { queryJson["scan_cap"] = it.toString() }
+        if (flexIndex) queryJson["use_fts"] = true
 
-        if (flexIndex) {
-            queryJson["use_fts"] = true
-        }
     }
 
 }

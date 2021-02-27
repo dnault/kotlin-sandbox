@@ -4,18 +4,18 @@
 package kt.sandbox
 
 import com.couchbase.client.kotlin.Cluster
+import com.couchbase.client.kotlin.CommonOptions
 import com.couchbase.client.kotlin.codec.*
-import com.couchbase.client.kotlin.kv.GetResult
-import com.couchbase.client.kotlin.kv.MutationResult
+import com.couchbase.client.kotlin.kv.*
 import com.couchbase.client.kotlin.query.QueryDiagnostics
-import com.couchbase.client.kotlin.query.QueryMetaData
+import com.couchbase.client.kotlin.query.QueryParameters
 import com.couchbase.client.kotlin.query.QueryParameters.Named
-import com.couchbase.client.kotlin.query.QueryRow
-import com.fasterxml.jackson.databind.node.ObjectNode
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.toList
 import java.nio.charset.StandardCharsets.UTF_8
 import java.time.Duration
 import java.time.Instant
@@ -32,7 +32,10 @@ internal class App {
 
 public fun main() {
     System.setProperty(DEBUG_PROPERTY_NAME, DEBUG_PROPERTY_VALUE_ON)
-    query()
+
+
+
+
 
     println(Long.MAX_VALUE)
     println(Instant.ofEpochMilli(Long.MAX_VALUE))
@@ -57,10 +60,12 @@ internal fun query() = runBlocking {
     println("cluster ready!")
 
     val other = cluster.bucket("other").defaultCollection()
-    val content : String? = null;
+    val content: String? = null;
     other.upsert("null", Content.json("null"))
 
-    val s : String? = other.get("null").contentAs<String?>()
+
+
+    val s: String? = other.get("null").contentAs<String?>()
     println(s == null)
 
     println(other.get("null").content.toStringUtf8())
@@ -101,7 +106,7 @@ internal fun query() = runBlocking {
     val foo: Deferred<MutationResult> = async { other.upsert("huh?", "who?") }
     foo.await()
 
-    val x : String? = null;
+    val x: String? = null;
     other.upsert("foo", x)
 
 //    val elaspedMillis = measureTimeMillis {
@@ -278,7 +283,10 @@ internal fun foo() = runBlocking {
     println(t)
     val obj = Project("Hank", "English")
 
-    collection.upsert("bar", listOf(obj, obj))
+    collection.upsert("bar", listOf(obj, obj),
+        expiry = Expiry.none(),
+        durability = Durability.clientVerified(ReplicateTo.ONE, PersistTo.ACTIVE)
+    )
 
     //collection.upsert("bar", listOf(obj, obj), expiry = Expiry.relative(Duration.ofSeconds(10)))
 
@@ -289,6 +297,19 @@ internal fun foo() = runBlocking {
     println("*** $out")
 
     collection.get("bar").contentAs<List<Project>>(transcoder)
+
+
+    collection.upsert("foo", options = CommonOptions(),
+        content = null as String?,
+        durability = Durability.persistToMajority()
+      //  expiry = relative(Duration.ofSeconds(30))
+    )
+
+   // cluster.query("select * from default", parameters = QueryParameters.named())
+
+    collection.upsert("foo", options = CommonOptions(), content = null as String?,
+        expiry = Expiry.none()
+    )
 
 
     val proj = out.first()

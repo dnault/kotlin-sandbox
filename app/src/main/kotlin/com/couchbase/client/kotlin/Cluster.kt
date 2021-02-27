@@ -96,7 +96,7 @@ public class Cluster internal constructor(
 
     public suspend fun query(
         statement: String,
-        options: CommonOptions = CommonOptions.DEFAULT,
+        options: CommonOptions = CommonOptions.Default,
         parameters: QueryParameters = QueryParameters.None,
         readonly: Boolean = false,
         adhoc: Boolean = true,
