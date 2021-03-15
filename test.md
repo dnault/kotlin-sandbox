@@ -146,11 +146,11 @@ UTF-8 encoding. The resulting byte array is the plaintext to encrypt.
 </tr>
 </thead>
 <tbody>
-<tr class="odd">
+<tr>
 <td>"xyzzy"</td>
 <td><pre>22 78 79 7a 7a 79 22</pre></td>
 </tr>
-<tr class="even">
+<tr>
 <td>{"dance":10,"looks":3}</td>
 <td>
 <pre>
