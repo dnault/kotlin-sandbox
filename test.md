@@ -3,7 +3,7 @@
 - RFC Name: SDK 3: Field-Level Encryption
 - RFC ID: 64
 - Start Date: April 16, 2020
-- Owner: David Nault &lt;david.nault@couchbase.com&gt;
+- Owner: David Nault
 - Current Status: Accepted
 - Relates To:
   - RFC 32 - Field Level Encryption
@@ -88,15 +88,13 @@ the "kid" (key ID) and "ciphertext" fields are specific to the standard
 "AEAD\_AES\_256\_CBC\_HMAC\_SHA512" algorithm. Custom algorithms may
 define different fields.
 
+```json
 {
-
-"alg": "AEAD\_AES\_256\_CBC\_HMAC\_SHA512",
-
-"kid": "my-secret-key",
-
-"ciphertext": "&lt;base64-encoded-ciphertext&gt;"
-
+  "alg": "AEAD_AES_256_CBC_HMAC_SHA512",
+  "kid": "my-secret-key",
+  "ciphertext": "&lt;base64-encoded-ciphertext&gt;"
 }
+```
 
 When decrypting a value, the FLE framework uses the algorithm name to
 look up the associated [Decrypter](#decrypter). The decrypter
@@ -120,21 +118,16 @@ Here’s a document with a normal field called "foo" and an encrypted
 field called "bar". Note that the name of the "bar" field has been
 mangled to indicate it holds an encrypted value:
 
+```json
 {
-
-"foo": "I am not a secret",
-
-"encrypted$bar": {
-
-"alg": "AEAD\_AES\_256\_CBC\_HMAC\_SHA512",
-
-"kid": "my-secret-key",
-
-"ciphertext": "&lt;base64-encoded-ciphertext&gt;"
-
+  "foo": "I am not a secret",
+  "encrypted$bar": {
+    "alg": "AEAD_AES_256_CBC_HMAC_SHA512",
+    "kid": "my-secret-key",
+    "ciphertext": "&lt;base64-encoded-ciphertext&gt;"
+  }
 }
-
-}
+```
 
 ## Supported Value Types
 
@@ -155,29 +148,31 @@ UTF-8 encoding. The resulting byte array is the plaintext to encrypt.
 <tbody>
 <tr class="odd">
 <td>"xyzzy"</td>
-<td>22 78 79 7a 7a 79 22</td>
+<td><pre>22 78 79 7a 7a 79 22</pre></td>
 </tr>
 <tr class="even">
 <td>{"dance":10,"looks":3}</td>
-<td><p>7b 22 64 61 6e 63 65 22 3a 31 30</p>
-<p>2c 22 6c 6f 6f 6b 73 22 3a 33 7d</p></td>
+<td>
+<pre>
+7b 22 64 61 6e 63 65 22 3a 31 30
+2c 22 6c 6f 6f 6b 73 22 3a 33 7d
+</pre>
+</td>
 </tr>
 <tr class="odd">
 <td>[1,1,2,3,5]</td>
-<td>5b 31 2c 31 2c 32 2c 33 2c 35 5d</td>
+<td><pre>5b 31 2c 31 2c 32 2c 33 2c 35 5d</pre></td>
 </tr>
 <tr class="even">
 <td>10</td>
-<td>31 30</td>
+<td><pre>31 30</pre></td>
 </tr>
 <tr class="odd">
 <td>null</td>
-<td>6e 75 6c 6c</td>
+<td><pre>6e 75 6c 6c</pre></td>
 </tr>
 </tbody>
 </table>
-
-##
 
 ## Test Case
 
@@ -191,30 +186,34 @@ algorithm which all SDKs must support.
 This static key is provided only for testing. Outside of testing, the
 key is obtained from a keyring.
 
+```
 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f
-
 10 11 12 13 14 15 16 17 18 19 1a 1b 1c 1d 1e 1f
-
 20 21 22 23 24 25 26 27 28 29 2a 2b 2c 2d 2e 2f
-
 30 31 32 33 34 35 36 37 38 39 3a 3b 3c 3d 3e 3f
+```
 
 ### Initialization Vector (IV)
 
 This static IV is provided only for testing. Outside of testing, the IV
 MUST be randomly generated using a cryptographically secure algorithm.
 
+```
 1a f3 8c 2d c2 b9 6f fd d8 66 94 09 23 41 bc 04
+```
 
 ### Document with Plaintext Field
 
+```json
 {"maxim":"The enemy knows the system."}
+```
 
 ### Plaintext Field Value (encrypt these bytes)
 
+```
 22 54 68 65 20 65 6e 65 6d 79 20 6b 6e 6f 77 73
-
 20 74 68 65 20 73 79 73 74 65 6d 2e 22
+```
 
 ### Associated Data
 
@@ -223,20 +222,15 @@ the associated data is a byte array of length zero.
 
 ### Document with Encrypted Field
 
+```json
 {
-
-"encrypted$maxim": {
-
-"alg": "AEAD\_AES\_256\_CBC\_HMAC\_SHA512",
-
-"kid": "test-key",
-
-"ciphertext":
-"GvOMLcK5b/3YZpQJI0G8BLm98oj20ZLdqKDV3MfTuGlWL4R5p5Deykuv2XLW4LcDvnOkmhuUSRbQ8QVEmbjq43XHdOm3ColJ6LzoaAtJihk="
-
+  "encrypted$maxim": {
+    "alg": "AEAD_AES_256_CBC_HMAC_SHA512",
+    "kid": "test-key",
+    "ciphertext": "GvOMLcK5b/3YZpQJI0G8BLm98oj20ZLdqKDV3MfTuGlWL4R5p5Deykuv2XLW4LcDvnOkmhuUSRbQ8QVEmbjq43XHdOm3ColJ6LzoaAtJihk="
+  }
 }
-
-}
+```
 
 # Reference Design
 
@@ -900,7 +894,7 @@ Here’s an example of a field encrypted with Transit:
 
 ```json
 {
-  "alg": "HASHICORP\_VAULT\_TRANSIT",
+  "alg": "HASHICORP_VAULT_TRANSIT",
   "kid": "myKey",
   "ciphertext": "vault:v1:8SDd3WHDOjf7mq6..."
 }
