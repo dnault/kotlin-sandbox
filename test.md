@@ -398,7 +398,7 @@ for any reason.
 Selects an appropriate decrypter based on the "alg" key of the
 given map. Converts the map to an EncryptionResult and asks the
 decrypter to decrypt it. Raises
-[DecryptionFailure](#decryptionfailure) if decryption fails
+[DecryptionFailure](#DecryptionFailure) if decryption fails
 for any reason.
 
 - String **mangle**(String fieldName) - Transforms the given field
@@ -523,6 +523,7 @@ reason.
 - Should have one of the other Field-Level Encryption errors as a
 cause.
 
+<a name="DecryptionFailure"/>
 ### \# 702 DecryptionFailure
 
 - Raised by CryptoManager.decrypt() when decryption fails for any
@@ -531,26 +532,31 @@ reason.
 - Should have one of the other Field-Level Encryption errors as a
 cause.
 
+<a name="CryptoKeyNotFound"></a>
 ### \# 703 CryptoKeyNotFound
 
 - Raised when a crypto operation fails because a required key is
 missing.
 
+<a name="InvalidCryptoKey"></a>
 ### \# 704 InvalidCryptoKey
 
 - Raised by an encrypter or decrypter when the key does not meet
 expectations (for example, if the key is the wrong size).
 
+<a name="DecrypterNotFound"></a>
 ### \# 705 DecrypterNotFound
 
 - Raised when a message cannot be decrypted because there is no
 decrypter registered for the algorithm.
 
+<a name="EncrypterNotFound"></a>
 ### \# 706 EncrypterNotFound
 
 - Raised when a message cannot be encrypted because there is no
 encrypter registered under the requested alias.
 
+<a name="InvalidCiphertext"></a>
 ### \# 707 InvalidCiphertext
 
 - Raised when decryption fails due to malformed input, integrity check
