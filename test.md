@@ -466,7 +466,7 @@ like in Java:
 // Create a keyring backed by a Java KeyStore
 KeyStore javaKeyStore = loadJavaKeyStore();
 Keyring keyring = new KeyStoreKeyring(javaKeyStore,
-    keyName -&gt; "password");
+    keyName -> "password");
 
 // Create a provider for the standard encryption algorithm
 var standardProvider = AeadAes256CbcHmacSha512Provider.builder()
@@ -478,7 +478,7 @@ var customProvider = new MyCustomProvider(keyring);
 
 // Create a new CryptoManager and register encrypters and decrypters
 CryptoManager cryptoManager = DefaultCryptoManager.builder()
-    .legacyAesDecrypters(keyring, s -&gt; s + "_signing")
+    .legacyAesDecrypters(keyring, s -> s + "_signing")
     .decrypter(standardProvider.decrypter())
     .decrypter(customProvider.decrypter())
     .encrypter("foo", standardProvider.encrypterForKey("key-a"))
@@ -741,7 +741,7 @@ padding. Prepend the IV to the result to get the "AES ciphertext."
     unsigned 64-bit big-endian integer. For example, if there are
     42 bytes of associated data, that's 336 bits, or 0x150 in hex.
     The value to pass to the message digest are these 8 bytes:
-    0x00 0x00 0x00 0x00 0x00 0x00 0x01 0x50.
+    `0x00 0x00 0x00 0x00 0x00 0x00 0x01 0x50`.
 
 - The digest generated in the previous step should be 64 bytes long.
 Truncate it to 32 bytes to get the "auth tag" (or signature, if
