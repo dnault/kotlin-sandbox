@@ -923,7 +923,7 @@ server.
 
 # **Signoff**
 
-| **Language** | **Team Member** | **Signoff Date** | **Revision** |
+| Language     | Team Member     | Signoff Date     | Revision     |
 |--------------|-----------------|------------------|--------------|
 | Node.js      | Brett Lawson    | 2021-03-03       | 6            |
 | Go           | Charles Dixon   | 2021-02-15       | 6            |
