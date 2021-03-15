@@ -523,7 +523,7 @@ reason.
 - Should have one of the other Field-Level Encryption errors as a
 cause.
 
-<a name="DecryptionFailure"/>
+<a name="DecryptionFailure"></a>
 ### \# 702 DecryptionFailure
 
 - Raised by CryptoManager.decrypt() when decryption fails for any
