@@ -462,43 +462,30 @@ CryptoManager instance when configuring the SDK. The easiest way to do
 this is to build a DefaultCryptoManager. Here’s what that might look
 like in Java:
 
+```java
 // Create a keyring backed by a Java KeyStore
-
 KeyStore javaKeyStore = loadJavaKeyStore();
-
 Keyring keyring = new KeyStoreKeyring(javaKeyStore,
-
-keyName -&gt; "password");
+    keyName -&gt; "password");
 
 // Create a provider for the standard encryption algorithm
-
 var standardProvider = AeadAes256CbcHmacSha512Provider.builder()
-
-.keyring(keyring)
-
-.build();
+    .keyring(keyring)
+    .build();
 
 // Create a provider for a user-defined algorithm
-
 var customProvider = new MyCustomProvider(keyring);
 
 // Create a new CryptoManager and register encrypters and decrypters
-
 CryptoManager cryptoManager = DefaultCryptoManager.builder()
-
-.legacyAesDecrypters(keyring, s -&gt; s + "\_signing")
-
-.decrypter(standardProvider.decrypter())
-
-.decrypter(customProvider.decrypter())
-
-.encrypter("foo", standardProvider.encrypterForKey("key-a"))
-
-.encrypter("bar", customProvider.encrypterForKey("key-b"))
-
-.defaultEncrypter(standardProvider.encrypterForKey("key-c"))
-
-.build();
+    .legacyAesDecrypters(keyring, s -&gt; s + "_signing")
+    .decrypter(standardProvider.decrypter())
+    .decrypter(customProvider.decrypter())
+    .encrypter("foo", standardProvider.encrypterForKey("key-a"))
+    .encrypter("bar", customProvider.encrypterForKey("key-b"))
+    .defaultEncrypter(standardProvider.encrypterForKey("key-c"))
+    .build();
+```
 
 ## Error Definitions
 
