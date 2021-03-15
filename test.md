@@ -138,41 +138,13 @@ To encrypt a value, first convert it to its textual representation
 (serialize it as JSON). Then convert the text to a byte array using
 UTF-8 encoding. The resulting byte array is the plaintext to encrypt.
 
-<table>
-<thead>
-<tr class="header">
-<th><strong>JSON Value</strong></th>
-<th><strong>Encrypt these bytes (hex)</strong></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>"xyzzy"</td>
-<td><pre>22 78 79 7a 7a 79 22</pre></td>
-</tr>
-<tr>
-<td>{"dance":10,"looks":3}</td>
-<td>
-<pre>
-7b 22 64 61 6e 63 65 22 3a 31 30
-2c 22 6c 6f 6f 6b 73 22 3a 33 7d
-</pre>
-</td>
-</tr>
-<tr>
-<td>[1,1,2,3,5]</td>
-<td><pre>5b 31 2c 31 2c 32 2c 33 2c 35 5d</pre></td>
-</tr>
-<tr>
-<td>10</td>
-<td><pre>31 30</pre></td>
-</tr>
-<tr>
-<td>null</td>
-<td><pre>6e 75 6c 6c</pre></td>
-</tr>
-</tbody>
-</table>
+| JSON Value             | Encrypt these bytes (hex)
+|------------------------|-----------------
+| "xyzzy"                | `22 78 79 7a 7a 79 22`
+| {"dance":10,"looks":3} | `7b 22 64 61 6e 63 65 22 3a 31 30 2c 22 6c 6f 6f 6b 73 22 3a 33 7d`
+| [1,1,2,3,5]            | `5b 31 2c 31 2c 32 2c 33 2c 35 5d`
+| 10                     | `31 30`
+| null                   | `6e 75 6c 6c`
 
 ## Test Case
 
