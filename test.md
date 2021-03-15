@@ -3,7 +3,7 @@
 - RFC Name: SDK 3: Field-Level Encryption
 - RFC ID: 64
 - Start Date: April 16, 2020
-- Owner: David Nault
+- Owner: David Nault <david.nault@couchbase.com>
 - Current Status: Accepted
 - Relates To:
   - RFC 32 - Field Level Encryption
