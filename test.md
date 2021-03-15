@@ -159,15 +159,15 @@ UTF-8 encoding. The resulting byte array is the plaintext to encrypt.
 </pre>
 </td>
 </tr>
-<tr class="odd">
+<tr>
 <td>[1,1,2,3,5]</td>
 <td><pre>5b 31 2c 31 2c 32 2c 33 2c 35 5d</pre></td>
 </tr>
-<tr class="even">
+<tr>
 <td>10</td>
 <td><pre>31 30</pre></td>
 </tr>
-<tr class="odd">
+<tr>
 <td>null</td>
 <td><pre>6e 75 6c 6c</pre></td>
 </tr>
