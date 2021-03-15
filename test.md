@@ -235,27 +235,21 @@ result as if the field does not exist.
 Here’s an example of how a developer might use JsonObjectCrypto to
 perform manual encryption and decryption:
 
+```java
 Collection col = cluster.bucket("b").defaultCollection();
 
 // Write encrypted value
-
 JsonObject document = JsonObject.create();
-
 JsonObjectCrypto crypto = document.crypto(collection);
-
 crypto.put("location", "Between palm trees");
-
 collection.upsert("treasureMap", document);
 
 // Read encrypted value
-
 JsonObject readItBack = collection.get("treasureMap")
-
-.contentAsObject();
-
+    .contentAsObject();
 JsonObjectCrypto readItBackCrypto = readItBack.crypto(collection);
-
 System.out.println(readItBackCrypto.getString("location"));
+```
 
 ## Encrypted annotation
 
@@ -395,7 +389,7 @@ Methods:
 - Map&lt;String, Object&gt; **encrypt**(byte\[\] plaintext, String
 encrypterAlias) - Encrypts the given plaintext using the named
 encrypter. Returns the EncryptionResult as a Map. Raises
-[EncryptionFailure](#encryptionfailure) if encryption fails
+[EncryptionFailure](#EncryptionFailure) if encryption fails
 for any reason.
 
 <!-- -->
@@ -520,6 +514,7 @@ addendum:
 
 - Parent Type for all other Field-Level Encryption errors
 
+<a name="EncryptionFailure"></a>
 ### \# 701 EncryptionFailure
 
 - Raised by CryptoManager.encrypt() when encryption fails for any
